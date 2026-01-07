@@ -20,6 +20,7 @@ public class MainWindowViewModel : ViewModelBase
         new MenuItemViewModel("Home", MaterialIconKind.Home),
         new MenuItemViewModel("Packages", MaterialIconKind.PackageVariantClosed),
         new MenuItemViewModel("Updates", MaterialIconKind.Update),
+        new MenuItemViewModel("Delete", MaterialIconKind.Delete),
         new MenuItemViewModel("Settings", MaterialIconKind.Settings)
     };
 

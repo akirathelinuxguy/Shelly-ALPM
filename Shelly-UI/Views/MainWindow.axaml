@@ -8,7 +8,9 @@
         x:Class="Shelly_UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Shelly">
+        Title="Shelly"
+        Width="800"
+        Height="600">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -17,7 +19,7 @@
     </Design.DataContext>
 
     <SplitView IsPaneOpen="{Binding IsPaneOpen}"
-               CompactPaneLength="48"
+               CompactPaneLength="66"
                DisplayMode="CompactInline"
                OpenPaneLength="200">
         <SplitView.Pane>
