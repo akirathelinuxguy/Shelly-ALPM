@@ -39,4 +39,16 @@
     <data name="Settings" xml:space="preserve">
         <value>Settings</value>
     </data>
+    <data name="PackageName" xml:space="preserve">
+        <value>Name</value>
+    </data>
+    <data name="PackageVersion" xml:space="preserve">
+        <value>Current Version</value>
+    </data>
+    <data name="PackageNewVersion" xml:space="preserve">
+        <value>New Version</value>
+    </data>
+    <data name="PackageSize" xml:space="preserve">
+        <value>Size</value>
+    </data>
 </root>

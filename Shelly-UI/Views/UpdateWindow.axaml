@@ -4,27 +4,79 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
              xmlns:vm="clr-namespace:PackageManager.Alpm;assembly=PackageManager"
+             xmlns:lang="clr-namespace:Shelly_UI.Assets"
+             xmlns:models="clr-namespace:Shelly_UI.Models"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.UpdateWindow"
              x:DataType="viewModels:UpdateViewModel">
-    <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Grid.Row="1">
-            <ListBox ItemsSource="{Binding PackagesForUpdating}"
+    <Grid>
+        <Grid RowDefinitions="Auto, *">
+            <Border Grid.Row="0"
+                    Background="{DynamicResource SystemAccentColor}"
+                    Padding="12,8,30,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{x:Static lang:Resources.PackageName}" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.PackageVersion}" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{x:Static lang:Resources.PackageNewVersion}" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Text="{x:Static lang:Resources.PackageSize}" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Column="4" Content="Toggle All" FontWeight="Bold" Command="{Binding CheckAll}" />
+                </Grid>
+            </Border>
+            <ListBox Grid.Row="1"
+                     ItemsSource="{Binding PackagesForUpdating}"
                      Background="Transparent"
-                     IsHitTestVisible="False">
+                     Padding="0">
                 <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:AlpmPackageUpdate">
-                        <Grid>
-                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Left" />
-                            <TextBlock Text="{Binding NewVersion }" VerticalAlignment="Center"
-                                       HorizontalAlignment="Right" />
-                        </Grid>
+                    <DataTemplate x:DataType="models:UpdateModel">
+                        <Border Padding="12,8,12,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Name}" />
+                                <TextBlock Grid.Column="1" Text="{Binding CurrentVersion}" />
+                                <TextBlock Grid.Column="2" Text="{Binding NewVersion}" />
+                                <TextBlock Grid.Column="3" Text="{Binding SizeString}" />
+                                <CheckBox Grid.Column="4" IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-        </ScrollViewer>
 
-    </StackPanel>
+        </Grid>
+        <Button Width="60" Height="60"
+                Margin="20"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Background="{DynamicResource SystemAccentColor}"
+                Foreground="White"
+                CornerRadius="30"
+                ToolTip.Tip="Update Selected">
+
+            <Button.Styles>
+                <!-- Simple hover effect -->
+                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                    <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
+                </Style>
+            </Button.Styles>
+            <avalonia:MaterialIcon Kind="ArrowDown" Width="30" Height="30" />
+        </Button>
+    </Grid>
 </UserControl>
