@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using PackageManager.Models;
@@ -16,6 +17,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
     private IntPtr _handle = IntPtr.Zero;
     private static readonly HttpClient _httpClient = new();
     private AlpmDownloadCallback _downloadCallback;
+
+
+    public void IntializeWithSync()
+    {
+        Initialize();
+        Sync();
+    }
 
     public void Initialize()
     {
@@ -241,14 +249,14 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
         }
     }
 
-    public void Sync()
+    public void Sync(bool force = false)
     {
         if (_handle == IntPtr.Zero) Initialize();
         var syncDbsPtr = GetSyncDbs(_handle);
         if (syncDbsPtr != IntPtr.Zero)
         {
             // Pass the entire list pointer directly to alpm_db_update
-            Update(_handle, syncDbsPtr, false);
+            Update(_handle, syncDbsPtr, force);
         }
     }
 
@@ -421,6 +429,96 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
         {
             // 6. Release transaction
             TransRelease(_handle);
+        }
+    }
+
+    public bool UpdatePackages(List<string> packageNames,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    {
+        List<IntPtr> pkgPtrs = [];
+        List<IntPtr> failedPkgPtrs = [];
+        if (_handle == IntPtr.Zero) Initialize();
+        var syncDbsPtr = GetSyncDbs(_handle);
+        Update(_handle, syncDbsPtr, true);
+        try
+        {
+            pkgPtrs.AddRange(packageNames.Select(packageName => DbGetPkg(GetLocalDb(_handle), packageName))
+                .Where(pkgPtr => pkgPtr != IntPtr.Zero));
+            if (TransInit(_handle, flags) != 0)
+            {
+                throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            failedPkgPtrs.AddRange(pkgPtrs.Where(pkgPtr => AddPkg(_handle, pkgPtr) != 0));
+
+            // Check if there are any packages to add or remove before preparing/committing
+            if (TransGetAdd(_handle) == IntPtr.Zero && TransGetRemove(_handle) == IntPtr.Zero)
+            {
+                return true; // Nothing to do, considered successful
+            }
+
+            if (TransPrepare(_handle, out var dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            if (TransCommit(_handle, out dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            return true;
+        }
+        finally
+        {
+            _ = TransRelease(_handle);
+        }
+    }
+
+    public bool UpdateSinglePackage(string packageName,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+        var syncDbsPtr = GetSyncDbs(_handle);
+        Update(_handle, syncDbsPtr, true);
+        try
+        {
+            if (TransInit(_handle, flags) != 0)
+            {
+                throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            var pkgPtr = DbGetPkg(GetLocalDb(_handle), packageName);
+            if (AddPkg(_handle, pkgPtr) != 0)
+            {
+                throw new Exception($"Failed to mark system upgrade: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            // Check if there are any packages to add or remove before preparing/committing
+            if (TransGetAdd(_handle) == IntPtr.Zero && TransGetRemove(_handle) == IntPtr.Zero)
+            {
+                return true; // Nothing to do, considered successful
+            }
+
+            if (TransPrepare(_handle, out var dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            if (TransCommit(_handle, out dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            return true;
+        }
+        finally
+        {
+            _ = TransRelease(_handle);
         }
     }
 
