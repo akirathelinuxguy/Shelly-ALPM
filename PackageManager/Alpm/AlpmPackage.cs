@@ -1,5 +1,4 @@
 using System;
-
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -12,6 +11,9 @@ public class AlpmPackage(IntPtr pkgPtr)
     public string Name => Marshal.PtrToStringUTF8(AlpmReference.GetPkgName(PackagePtr));
     public string Version => Marshal.PtrToStringUTF8(AlpmReference.GetPkgVersion(PackagePtr));
     public long Size => AlpmReference.GetPkgSize(PackagePtr);
+    public string Description => Marshal.PtrToStringUTF8(AlpmReference.GetPkgDesc(PackagePtr));
+
+    public string Url => Marshal.PtrToStringUTF8(AlpmReference.GetPkgUrl(PackagePtr));
 
     public static List<AlpmPackage> FromList(IntPtr listPtr)
     {
@@ -24,16 +26,20 @@ public class AlpmPackage(IntPtr pkgPtr)
             {
                 packages.Add(new AlpmPackage(node.Data));
             }
+
             currentPtr = node.Next;
         }
+
         return packages;
     }
-    
+
     public AlpmPackageDto ToDto() => new AlpmPackageDto
     {
         Name = Name,
         Version = Version,
-        Size = Size
+        Size = Size,
+        Description = Description,
+        Url = Url
     };
 
     public override string ToString()

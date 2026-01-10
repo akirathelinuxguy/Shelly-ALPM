@@ -8,7 +8,7 @@ class Program
     static void Main(string[] args)
     {
         using var manager = new AlpmManager();
-        manager.IntializeWithSync();
+        manager.Initialize();
 
         while (true)
         {
@@ -46,32 +46,29 @@ class Program
                         break;
 
                     case "GetPackagesNeedingUpdate":
-                        //manager.IntializeWithSync();
+                        manager.Sync();
                         var updates = manager.GetPackagesNeedingUpdate();
                         response.Data = JsonSerializer.Serialize(updates);
                         break;
 
                     case "Sync":
-                        //manager.IntializeWithSync();
+                        manager.Sync();
                         break;
 
                     case "InstallPackages":
                         if (request.Payload == null) throw new Exception("Missing packages list");
                         var packagesToInstall = JsonSerializer.Deserialize<List<string>>(request.Payload);
-                        //manager.Initialize();
                         manager.InstallPackages(packagesToInstall!);
                         break;
 
                     case "UpdatePackages":
                         if (request.Payload == null) throw new Exception("Missing packages list");
                         var packagesToUpdate = JsonSerializer.Deserialize<List<string>>(request.Payload);
-                        //manager.Initialize();
                         manager.UpdatePackages(packagesToUpdate!);
                         break;
 
                     case "RemovePackage":
                         if (request.Payload == null) throw new Exception("Missing package name");
-                        //manager.Initialize();
                         manager.RemovePackage(request.Payload);
                         break;
 
