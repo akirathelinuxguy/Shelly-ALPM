@@ -1,6 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shelly-UI", "Shelly-UI\Shelly-UI.csproj", "{0E0053B3-2AE1-46CF-9A74-3A7E53367AF4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{92AB0E11-303A-47AC-AD1D-1CC69A8EB02A} = {92AB0E11-303A-47AC-AD1D-1CC69A8EB02A}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PackageManager", "PackageManager\PackageManager.csproj", "{FEB67E81-2E4F-4549-A8A7-181F9B2A0B19}"
 EndProject
