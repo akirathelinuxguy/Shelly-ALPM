@@ -103,7 +103,7 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
             try
             {
                 var request = new WorkerRequest { Command = "Exit" };
-                var jsonRequest = JsonSerializer.Serialize(request);
+                var jsonRequest = JsonSerializer.Serialize(request, AlpmWorkerJsonContext.Default.WorkerRequest);
                 _workerInput?.WriteLine(jsonRequest);
                 _workerInput?.Flush();
                 if (!_workerProcess.WaitForExit(1000))
@@ -136,7 +136,7 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
             Payload = payload
         };
 
-        var jsonRequest = JsonSerializer.Serialize(request);
+        var jsonRequest = JsonSerializer.Serialize(request, AlpmWorkerJsonContext.Default.WorkerRequest);
         _workerInput!.WriteLine(jsonRequest);
         _workerInput.Flush();
 
@@ -147,7 +147,7 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
             throw new Exception($"Worker process exited unexpectedly: {error}");
         }
 
-        var response = JsonSerializer.Deserialize<WorkerResponse>(jsonResponse)
+        var response = JsonSerializer.Deserialize(jsonResponse, AlpmWorkerJsonContext.Default.WorkerResponse)
                        ?? throw new Exception("Failed to deserialize worker response.");
 
         if (!response.Success)
@@ -170,32 +170,32 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
     public List<AlpmPackageDto> GetInstalledPackages()
     {
         var json = RunWorker("GetInstalledPackages", elevated: false);
-        return JsonSerializer.Deserialize<List<AlpmPackageDto>>(json) ?? new List<AlpmPackageDto>();
+        return JsonSerializer.Deserialize(json, AlpmWorkerJsonContext.Default.ListAlpmPackageDto) ?? new List<AlpmPackageDto>();
     }
 
     public List<AlpmPackageDto> GetAvailablePackages()
     {
         var json = RunWorker("GetAvailablePackages", elevated: false);
-        return JsonSerializer.Deserialize<List<AlpmPackageDto>>(json) ?? new List<AlpmPackageDto>();
+        return JsonSerializer.Deserialize(json, AlpmWorkerJsonContext.Default.ListAlpmPackageDto) ?? new List<AlpmPackageDto>();
     }
 
     public List<AlpmPackageUpdateDto> GetPackagesNeedingUpdate()
     {
         var json = RunWorker("GetPackagesNeedingUpdate", elevated: false);
-        return JsonSerializer.Deserialize<List<AlpmPackageUpdateDto>>(json) ?? new List<AlpmPackageUpdateDto>();
+        return JsonSerializer.Deserialize(json, AlpmWorkerJsonContext.Default.ListAlpmPackageUpdateDto) ?? new List<AlpmPackageUpdateDto>();
     }
 
     public void InstallPackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
-        var jsonArgs = JsonSerializer.Serialize(packageNames);
+        var jsonArgs = JsonSerializer.Serialize(packageNames, AlpmWorkerJsonContext.Default.ListString);
         RunWorker("InstallPackages", jsonArgs, elevated: true);
     }
 
     public void RemovePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
-        var jsonArgs = JsonSerializer.Serialize(packageNames);
+        var jsonArgs = JsonSerializer.Serialize(packageNames, AlpmWorkerJsonContext.Default.ListString);
         RunWorker("RemovePackages", jsonArgs, elevated: true);
     }
 
@@ -208,8 +208,14 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
     public void UpdatePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
-        var jsonArgs = JsonSerializer.Serialize(packageNames);
+        var jsonArgs = JsonSerializer.Serialize(packageNames, AlpmWorkerJsonContext.Default.ListString);
         RunWorker("UpdatePackages", jsonArgs, elevated: true);
+    }
+
+    public void SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.NoHooks | AlpmTransFlag.NoScriptlet)
+    {
+        EnsureWorkerStarted(true);
+        RunWorker("SyncSystemUpdate", elevated: true); 
     }
 
     public void Dispose()

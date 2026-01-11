@@ -1,7 +1,17 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using PackageManager.Alpm;
 
 namespace Shelly.Worker;
+
+[JsonSerializable(typeof(WorkerRequest))]
+[JsonSerializable(typeof(WorkerResponse))]
+[JsonSerializable(typeof(List<string>))]
+[JsonSerializable(typeof(List<AlpmPackageDto>))]
+[JsonSerializable(typeof(List<AlpmPackageUpdateDto>))]
+internal partial class WorkerJsonContext : JsonSerializerContext
+{
+}
 
 class Program
 {
@@ -18,7 +28,7 @@ class Program
             WorkerRequest? request;
             try
             {
-                request = JsonSerializer.Deserialize<WorkerRequest>(line);
+                request = JsonSerializer.Deserialize(line, WorkerJsonContext.Default.WorkerRequest);
             }
             catch
             {
@@ -36,19 +46,19 @@ class Program
                     case "GetAvailablePackages":
                         //manager.Initialize();
                         var available = manager.GetAvailablePackages();
-                        response.Data = JsonSerializer.Serialize(available);
+                        response.Data = JsonSerializer.Serialize(available, WorkerJsonContext.Default.ListAlpmPackageDto);
                         break;
 
                     case "GetInstalledPackages":
                         //manager.Initialize();
                         var installed = manager.GetInstalledPackages();
-                        response.Data = JsonSerializer.Serialize(installed);
+                        response.Data = JsonSerializer.Serialize(installed, WorkerJsonContext.Default.ListAlpmPackageDto);
                         break;
 
                     case "GetPackagesNeedingUpdate":
                         manager.Sync();
                         var updates = manager.GetPackagesNeedingUpdate();
-                        response.Data = JsonSerializer.Serialize(updates);
+                        response.Data = JsonSerializer.Serialize(updates, WorkerJsonContext.Default.ListAlpmPackageUpdateDto);
                         break;
 
                     case "Sync":
@@ -57,13 +67,13 @@ class Program
 
                     case "InstallPackages":
                         if (request.Payload == null) throw new Exception("Missing packages list");
-                        var packagesToInstall = JsonSerializer.Deserialize<List<string>>(request.Payload);
+                        var packagesToInstall = JsonSerializer.Deserialize(request.Payload, WorkerJsonContext.Default.ListString);
                         manager.InstallPackages(packagesToInstall!);
                         break;
 
                     case "UpdatePackages":
                         if (request.Payload == null) throw new Exception("Missing packages list");
-                        var packagesToUpdate = JsonSerializer.Deserialize<List<string>>(request.Payload);
+                        var packagesToUpdate = JsonSerializer.Deserialize(request.Payload, WorkerJsonContext.Default.ListString);
                         manager.UpdatePackages(packagesToUpdate!);
                         break;
 
@@ -73,8 +83,11 @@ class Program
                         break;
                     case "RemovePackages":
                         if (request.Payload == null) throw new Exception("Missing packages list");
-                        var packagesToRemove = JsonSerializer.Deserialize<List<string>>(request.Payload);
+                        var packagesToRemove = JsonSerializer.Deserialize(request.Payload, WorkerJsonContext.Default.ListString);
                         manager.RemovePackages(packagesToRemove!);
+                        break;
+                    case "SyncSystemUpdate":
+                        manager.SyncSystemUpdate();
                         break;
                     case "Exit":
                         return;
@@ -91,7 +104,7 @@ class Program
                 response.Error = ex.Message;
             }
 
-            Console.WriteLine(JsonSerializer.Serialize(response));
+            Console.WriteLine(JsonSerializer.Serialize(response, WorkerJsonContext.Default.WorkerResponse));
         }
     }
 }

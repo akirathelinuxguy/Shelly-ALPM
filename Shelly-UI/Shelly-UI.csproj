@@ -5,6 +5,10 @@
         <Nullable>enable</Nullable>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <RootNamespace>Shelly_UI</RootNamespace>
+        <!-- Enable Native AOT -->
+        <PublishAot>true</PublishAot>
+        <!-- Optimization: Remove symbols for smaller binary -->
+        <StripSymbols>true</StripSymbols>
     </PropertyGroup>
 
     <ItemGroup>

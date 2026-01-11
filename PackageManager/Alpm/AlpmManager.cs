@@ -65,7 +65,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             AddCacheDir(_handle, _config.CacheDir);
         }
 
-        // Resolve 'auto' architecture to the actual system architecture
+        //Resolve 'auto' architecture to the actual system architecture
         string resolvedArch = _config.Architecture;
         if (resolvedArch.Equals("auto", StringComparison.OrdinalIgnoreCase))
         {
@@ -76,12 +76,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 _ => "x86_64" // Fallback to a sensible default or handle other cases
             };
         }
-
+        
         if (!string.IsNullOrEmpty(resolvedArch))
         {
             AddArchitecture(_handle, resolvedArch);
         }
-
+        AddArchitecture(_handle, _config.Architecture);
         // Set up the download callback
         _downloadCallback = DownloadFile;
         SetDownloadCallback(_handle, _downloadCallback, IntPtr.Zero);
@@ -609,6 +609,41 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
     }
 
+    public void SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+        var syncDbsPtr = GetSyncDbs(_handle);
+        Update(_handle, syncDbsPtr, true);
+        try
+        {
+            if (TransInit(_handle, flags) != 0)
+            {
+                throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            if (SyncSysupgrade(_handle, false) != 0) throw new Exception(GetErrorMessage(ErrorNumber(_handle)));
+            if (TransPrepare(_handle, out var dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            if (TransCommit(_handle, out dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to initialize transaction: {ex.Message}");
+        }
+        finally
+        {
+            _ = TransRelease(_handle);
+        }
+    }
+
     public void UpdatePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
@@ -643,6 +678,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 pkgPtrs.Add(pkgPtr);
             }
+
             if (TransInit(_handle, flags) != 0)
             {
                 throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");

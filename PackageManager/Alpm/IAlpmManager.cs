@@ -21,4 +21,6 @@ public interface IAlpmManager
 
     void UpdatePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+
+    void SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
 }

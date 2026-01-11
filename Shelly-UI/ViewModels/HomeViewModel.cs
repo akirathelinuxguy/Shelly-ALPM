@@ -126,7 +126,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
     {
         if (!Directory.Exists(FeedFolder)) Directory.CreateDirectory(FeedFolder);
         
-        var json = JsonSerializer.Serialize(feed);
+        var json = JsonSerializer.Serialize(feed, ShellyUIJsonContext.Default.CachedRssModel);
         File.WriteAllText(FeedPath, json);
     }
 
@@ -137,7 +137,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
         try
         {
             var json = File.ReadAllText(FeedPath);
-            return JsonSerializer.Deserialize<CachedRssModel>(json) ?? new CachedRssModel();
+            return JsonSerializer.Deserialize(json, ShellyUIJsonContext.Default.CachedRssModel) ?? new CachedRssModel();
         }
         catch
         {

@@ -18,7 +18,7 @@ public class ConfigService : IConfigService
     {
         if (!Directory.Exists(ConfigFolder)) Directory.CreateDirectory(ConfigFolder);
         
-        var json = JsonSerializer.Serialize(config);
+        var json = JsonSerializer.Serialize(config, ShellyUIJsonContext.Default.ShellyConfig);
         File.WriteAllText(ConfigPath, json);
     }
 
@@ -29,7 +29,7 @@ public class ConfigService : IConfigService
         try
         {
             var json = File.ReadAllText(ConfigPath);
-            return JsonSerializer.Deserialize<ShellyConfig>(json) ?? new ShellyConfig();
+            return JsonSerializer.Deserialize(json, ShellyUIJsonContext.Default.ShellyConfig) ?? new ShellyConfig();
         }
         catch
         {

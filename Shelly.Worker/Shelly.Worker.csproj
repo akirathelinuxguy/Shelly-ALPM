@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Enable Native AOT -->
+    <PublishAot>true</PublishAot>
+    <!-- Optimization: Remove symbols for smaller binary -->
+    <StripSymbols>true</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup>
