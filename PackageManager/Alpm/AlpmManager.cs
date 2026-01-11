@@ -54,12 +54,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             _handle = IntPtr.Zero;
             throw new Exception($"Error initializing alpm library: {error}");
         }
-
-        if (!string.IsNullOrEmpty(_config.Architecture))
-        {
-            AddArchitecture(_handle, _config.Architecture);
-        }
-
+        
         if (!string.IsNullOrEmpty(_config.CacheDir))
         {
             AddCacheDir(_handle, _config.CacheDir);
@@ -81,7 +76,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             AddArchitecture(_handle, resolvedArch);
         }
-        AddArchitecture(_handle, _config.Architecture);
         // Set up the download callback
         _downloadCallback = DownloadFile;
         SetDownloadCallback(_handle, _downloadCallback, IntPtr.Zero);
