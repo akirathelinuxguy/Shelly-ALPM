@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using PackageManager.Models;
 using PackageManager.Utilities;
 using static PackageManager.Alpm.AlpmReference;
@@ -90,14 +91,19 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 SetDefaultSigLevel(_handle, AlpmSigLevel.None);
                 foreach (var server in repo.Servers)
                 {
+                    var archSuffixMatch = Regex.Match(server, @"\$arch([^/]+)");
+                    if (archSuffixMatch.Success)
+                    {
+                        string suffix = archSuffixMatch.Groups[1].Value;
+                        AddArchitecture(_handle, resolvedArch+suffix);
+                        Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
+                        Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch+suffix}");
+                    }
                     // Resolve $repo and $arch variables in the server URL
-                    string resolvedServer = server
+                    var resolvedServer = server
                         .Replace("$repo", repo.Name)
                         .Replace("$arch", resolvedArch);
-                    if (resolvedArch.Contains("_v3") || resolvedArch.Contains("_v4"))
-                    {
-                        AddArchitecture(_handle, resolvedArch);
-                    }
+                    Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture {resolvedArch}");
 
                     Console.Error.WriteLine($"[DEBUG_LOG] Registering Server: {resolvedServer}");
                     DbAddServer(db, resolvedServer);
