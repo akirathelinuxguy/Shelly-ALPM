@@ -13,6 +13,8 @@
         }
     },
     "LinuxSettings": {
+        "AppIcon": "Assets/shellylogo.png",
+        "Maintainer": "Zoey Bauer",
         "CreateBinSymlink": "True"
     },
     "Win32Settings": {
