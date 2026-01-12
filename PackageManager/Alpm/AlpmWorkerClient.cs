@@ -8,6 +8,7 @@ namespace PackageManager.Alpm;
 
 public class AlpmWorkerClient : IAlpmManager, IDisposable
 {
+    public event EventHandler<AlpmProgressEventArgs>? Progress;
     private readonly string _workerPath;
     private readonly Func<string?>? _passwordProvider;
     private Process? _workerProcess;

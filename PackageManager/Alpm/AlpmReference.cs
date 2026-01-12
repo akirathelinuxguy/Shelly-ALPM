@@ -16,6 +16,10 @@ namespace PackageManager.Alpm
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void AlpmQuestionCallback(IntPtr questionPtr);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void AlpmProgressCallback(IntPtr ctx, AlpmProgressType progress,
+            IntPtr pkg, int percent, ulong howmany, ulong current);
         
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_eventcb")]
         public static partial int SetEventCallback(IntPtr handle, AlpmEventCallback cb);
@@ -28,6 +32,9 @@ namespace PackageManager.Alpm
 
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_questioncb")]
         public static partial int SetQuestionCallback(IntPtr handle, AlpmQuestionCallback cb);
+
+        [LibraryImport(LibName, EntryPoint = "alpm_option_set_progresscb")]
+        public static partial int SetProgressCallback(IntPtr handle, AlpmProgressCallback cb, IntPtr ctx);
         
         /// <summary>
         /// Initializes the alpm library.

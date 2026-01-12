@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 
 namespace PackageManager.Alpm;
 
 public interface IAlpmManager
 {
+    event EventHandler<AlpmProgressEventArgs>? Progress;
+
     void IntializeWithSync();
     void Initialize();
     void Sync(bool force = false);

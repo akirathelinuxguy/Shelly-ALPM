@@ -20,7 +20,9 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     private AlpmDownloadCallback _downloadCallback;
     private AlpmEventCallback _eventCallback;
     private AlpmQuestionCallback _questionCallback;
+    private AlpmProgressCallback _progressCallback;
 
+    public event EventHandler<AlpmProgressEventArgs>? Progress;
 
     public void IntializeWithSync()
     {
@@ -90,6 +92,9 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         _questionCallback = HandleQuestion;
         SetQuestionCallback(_handle, _questionCallback);
+
+        _progressCallback = HandleProgress;
+        SetProgressCallback(_handle, _progressCallback, IntPtr.Zero);
 
         foreach (var repo in _config.Repos)
         {
@@ -860,6 +865,27 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         _handle = IntPtr.Zero;
     }
     
+    private void HandleProgress(IntPtr ctx, AlpmProgressType progress, IntPtr pkgNamePtr, int percent, ulong howmany,
+        ulong current)
+    {
+        try
+        {
+            string? pkgName = pkgNamePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(pkgNamePtr) : null;
+
+            Progress?.Invoke(this, new AlpmProgressEventArgs(
+                progress,
+                pkgName,
+                percent,
+                howmany,
+                current
+            ));
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[ALPM_ERROR] Error in progress callback: {ex.Message}");
+        }
+    }
+
         private void HandleEvent(IntPtr eventPtr)
         {
             if (eventPtr == IntPtr.Zero) return;
