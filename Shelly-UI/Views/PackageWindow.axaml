@@ -74,7 +74,13 @@
                                                        MaxWidth="300" />
                                         </MenuItem.Header>
                                     </MenuItem>
-                                    <MenuItem Header="{Binding Url, StringFormat='Url'}" IsEnabled="False" />
+                                    <MenuItem Click="OpenUrl_Click" CommandParameter="{Binding Url}">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="{Binding Url}"
+                                                       Foreground="#1976D2"
+                                                       TextDecorations="Underline"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
                                 </ContextMenu>
                             </Setter.Value>
                         </Setter>

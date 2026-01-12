@@ -24,7 +24,7 @@
     <Grid Background="{DynamicResource SystemChromeLowColor}">
         <Grid RowDefinitions="Auto,*">
             <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+                <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
                     <TextBlock
                         Text="{x:Static lang:Resources.Packages}"
                         FontWeight="Bold"
@@ -48,7 +48,7 @@
                         Background="Transparent"
                         Command="{Binding RefreshCommand}"
                         ToolTip.Tip="{x:Static lang:Resources.Refresh}">
-                        <avalonia:MaterialIcon Kind="Refresh" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
+                        <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
                     </Button>
                 </Grid>
             </Border>

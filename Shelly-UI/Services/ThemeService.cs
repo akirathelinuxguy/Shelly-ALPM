@@ -15,18 +15,28 @@ public class ThemeService
             var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
             if (fluentTheme != null)
             {
-                if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var currentDark) && currentDark is { } darkPalette)
+                if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var currentDark) &&
+                    currentDark is { } darkPalette)
                 {
                     darkPalette.Accent = newColor;
                     fluentTheme.Palettes[ThemeVariant.Dark] = darkPalette;
                 }
-                
-                if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Light, out var currentLight) && currentLight is { } lightPalette)
+
+                if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Light, out var currentLight) &&
+                    currentLight is { } lightPalette)
                 {
                     lightPalette.Accent = newColor;
                     fluentTheme.Palettes[ThemeVariant.Light] = lightPalette;
                 }
             }
+        }
+    }
+
+    public void SetTheme(bool isDark)
+    {
+        if (Application.Current != null)
+        {
+            Application.Current.RequestedThemeVariant = isDark ? ThemeVariant.Dark : ThemeVariant.Light;
         }
     }
 }

@@ -9,9 +9,9 @@
              x:DataType="viewModels:SettingViewModel"
              x:CompileBindings="True">
     <StackPanel Margin="20" Spacing="10">
-        <TextBlock Text="{x:Static lang:Resources.Appearence}" FontSize="18" FontWeight="Bold"/>
+        <TextBlock Text="{x:Static lang:Resources.Appearance}" FontSize="18" FontWeight="Bold"/>
         
-        <TextBlock Text="{x:Static lang:Resources.AcccentHexColor}" FontSize="14" Opacity="0.7"/>
+        <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14" Opacity="0.7"/>
         
         <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
             <TextBox Grid.Column="0" 
@@ -32,6 +32,8 @@
                 Command="{Binding ApplyCustomAccent}"
                 Background="{DynamicResource SystemAccentColor}"
                 Foreground="{DynamicResource SystemBaseHighColor}"/>
+        <ToggleSwitch Content="Toggle Dark/Light Mode" 
+                       IsChecked="{Binding IsDarkMode, Mode=TwoWay}"/>
         <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False"></ToggleSwitch>
         <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"></ToggleSwitch>
         <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False"></ToggleSwitch>

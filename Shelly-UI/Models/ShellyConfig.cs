@@ -5,6 +5,8 @@ public class ShellyConfig
     public string? AccentColor { get; set; }
     
     public string? Culture {get; set;}
+    
+    public bool DarkMode { get; set; } = true;
 
     public bool AurEnabled { get; set; } = false;
     

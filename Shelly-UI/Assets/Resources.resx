@@ -108,11 +108,11 @@
     <data name="ApplyAccent" xml:space="preserve">
         <value>Apply Custom Accent</value>
     </data>
-    <data name="Appearence" xml:space="preserve">
-        <value>Appearence</value>
+    <data name="Appearance" xml:space="preserve">
+        <value>Appearance</value>
     </data>
-    <data name="AcccentHexColor" xml:space="preserve">
-        <value>Accemt Hex Color</value>
+    <data name="AccentHexColor" xml:space="preserve">
+        <value>Accent Hex Color</value>
     </data>
     <data name="Confirm" xml:space="preserve">
         <value>Confirm</value>

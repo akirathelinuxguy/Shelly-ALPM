@@ -30,12 +30,16 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
         {
             _accentHex = pal.Accent.ToString();
         }
+        var config = _configService.LoadConfig();
+        _isDarkMode = config.DarkMode;
 
         CheckForUpdatesCommand = ReactiveCommand.CreateFromTask(CheckForUpdates);
         
     }
     
     private string _accentHex = "#018574";
+    
+    private bool _isDarkMode;
 
     public string AccentHex
     {
@@ -46,11 +50,26 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
     public void ApplyCustomAccent()
     {
        new ThemeService().ApplyCustomAccent(AccentHex);
-       _configService.SaveConfig(new ShellyConfig
-       {
-           AccentColor = AccentHex
-       });
+       var config = _configService.LoadConfig();
+       config.AccentColor = AccentHex;
+       _configService.SaveConfig(config);
     }
+    
+    public bool IsDarkMode
+    {
+        get => _isDarkMode;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isDarkMode, value);
+            new ThemeService().SetTheme(value);
+                
+            var config = _configService.LoadConfig();
+            config.DarkMode = value;
+            _configService.SaveConfig(config);
+        }
+    }
+    
+  
     
     public IScreen HostScreen { get; }
     

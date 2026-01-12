@@ -3,7 +3,7 @@
              x:Class="Shelly_UI.App"
              xmlns:local="using:Shelly_UI"
              xmlns:icons="using:Material.Icons.Avalonia"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Dark">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
     <Application.Styles>
         <FluentTheme>

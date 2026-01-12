@@ -42,6 +42,7 @@ public partial class App : Application
             var cacheService = _services.GetRequiredService<IAppCache>();
             var config = configService.LoadConfig();
             if (config.AccentColor != null) themeService.ApplyCustomAccent(config.AccentColor);
+            themeService.SetTheme(config.DarkMode);
             Assets.Resources.Culture = config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");
         
             desktop.MainWindow = new MainWindow

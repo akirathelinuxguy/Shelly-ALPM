@@ -29,6 +29,7 @@ public class ConfigService : IConfigService
         try
         {
             var json = File.ReadAllText(ConfigPath);
+            Console.WriteLine(ConfigPath);
             return JsonSerializer.Deserialize(json, ShellyUIJsonContext.Default.ShellyConfig) ?? new ShellyConfig();
         }
         catch
