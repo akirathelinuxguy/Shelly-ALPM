@@ -52,8 +52,8 @@ public class MainWindowViewModelTests : TestScheduler
 
         Assert.That(vm.IsProcessing, Is.True);
         
-        // Advance time by 5 seconds
-        AdvanceBy(TimeSpan.FromSeconds(5).Ticks);
+        // Advance time by 30 seconds
+        AdvanceBy(TimeSpan.FromSeconds(30).Ticks);
         
         Assert.That(vm.IsProcessing, Is.False);
         Assert.That(vm.ProcessingMessage, Is.Empty);
@@ -69,35 +69,59 @@ public class MainWindowViewModelTests : TestScheduler
 
         Assert.That(vm.IsProcessing, Is.True);
         
-        // Advance time by 4 seconds
-        AdvanceBy(TimeSpan.FromSeconds(4).Ticks);
+        // Advance time by 29 seconds
+        AdvanceBy(TimeSpan.FromSeconds(29).Ticks);
         Assert.That(vm.IsProcessing, Is.True);
         
         // New event
         _alpmManagerMock.Raise(m => m.PackageOperation += null, 
             new AlpmPackageOperationEventArgs(AlpmEventType.PackageOperationStart, "test-package-2"));
         
-        // Advance time by another 4 seconds (total 8 from start, but only 4 from last event)
-        AdvanceBy(TimeSpan.FromSeconds(4).Ticks);
+        // Advance time by another 29 seconds (total 58 from start, but only 29 from last event)
+        AdvanceBy(TimeSpan.FromSeconds(29).Ticks);
         Assert.That(vm.IsProcessing, Is.True);
         
-        // Advance time by another 1 second (total 5 from last event)
+        // Advance time by another 1 second (total 30 from last event)
         AdvanceBy(TimeSpan.FromSeconds(1).Ticks);
         Assert.That(vm.IsProcessing, Is.False);
     }
 
     [Test]
-    public void IsProcessing_ShouldBeFalse_WhenPackageOperationDoneEventOccurs()
+    public void IsProcessing_ShouldBeFalse_WhenTransactionDoneEventOccurs()
     {
         var vm = new MainWindowViewModel(_configServiceMock.Object, _appCacheMock.Object, _alpmManagerMock.Object, this);
+        
+        _alpmManagerMock.Raise(m => m.PackageOperation += null, 
+            new AlpmPackageOperationEventArgs(AlpmEventType.TransactionStart, null));
         
         _alpmManagerMock.Raise(m => m.PackageOperation += null, 
             new AlpmPackageOperationEventArgs(AlpmEventType.PackageOperationStart, "test-package"));
         
         _alpmManagerMock.Raise(m => m.PackageOperation += null, 
             new AlpmPackageOperationEventArgs(AlpmEventType.PackageOperationDone, "test-package"));
+        
+        Assert.That(vm.IsProcessing, Is.True);
+
+        _alpmManagerMock.Raise(m => m.PackageOperation += null, 
+            new AlpmPackageOperationEventArgs(AlpmEventType.TransactionDone, null));
 
         Assert.That(vm.IsProcessing, Is.False);
         Assert.That(vm.ProcessingMessage, Is.Empty);
+    }
+
+    [Test]
+    public void Progress_ShouldUpdate_WhenProgressEventOccurs()
+    {
+        var vm = new MainWindowViewModel(_configServiceMock.Object, _appCacheMock.Object, _alpmManagerMock.Object, this);
+
+        _alpmManagerMock.Raise(m => m.Progress += null,
+            new AlpmProgressEventArgs(AlpmProgressType.AddStart, "test-package", 50, 100, 50));
+        
+        // Trigger scheduler
+        AdvanceBy(1);
+
+        Assert.That(vm.ProgressValue, Is.EqualTo(50));
+        Assert.That(vm.ProgressIndeterminate, Is.False);
+        Assert.That(vm.ProcessingMessage, Contains.Substring("test-package"));
     }
 }

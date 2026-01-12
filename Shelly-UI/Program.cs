@@ -23,6 +23,22 @@ sealed class Program
             return;
         }
 
+        if (!UserIdentity.IsRoot())
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "pkexec",
+                    Arguments = $"env DISPLAY={Environment.GetEnvironmentVariable("DISPLAY")} XAUTHORITY={Environment.GetEnvironmentVariable("XAUTHORITY")} {Process.GetCurrentProcess().MainModule?.FileName} {string.Join(" ", args)}",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            return;
+        }
+
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }

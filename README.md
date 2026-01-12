@@ -56,7 +56,7 @@ Run the application from your terminal or application launcher:
 shelly-ui
 ```
 
-*Note: Shelly may require root privileges for certain package management operations.*
+*Note: Shelly will relaunch itself as root using pkexec if not already running as root.*
 
 ## Development
 

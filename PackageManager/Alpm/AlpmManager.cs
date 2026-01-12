@@ -909,9 +909,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     break;
                 case AlpmEventType.TransactionStart:
                     Console.Error.WriteLine("[ALPM] Starting transaction...");
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
                     break;
                 case AlpmEventType.TransactionDone:
                     Console.Error.WriteLine("[ALPM] Transaction successfully finished.");
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
                     break;
                 case AlpmEventType.IntegrityStart:
                     Console.Error.WriteLine("[ALPM] Checking package integrity...");

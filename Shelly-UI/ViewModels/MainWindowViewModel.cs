@@ -29,20 +29,53 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         packageOperationEvents.Subscribe(pattern =>
         {
             var args = pattern.EventArgs;
-            if (args.EventType == AlpmEventType.PackageOperationStart)
+            if (args.EventType == AlpmEventType.PackageOperationStart || args.EventType == AlpmEventType.TransactionStart)
             {
                 IsProcessing = true;
-                ProcessingMessage = $"Completing requested actions: {args.PackageName}";
+                if (!string.IsNullOrEmpty(args.PackageName))
+                {
+                    ProcessingMessage = $"Completing requested actions: {args.PackageName}";
+                }
+                else if (args.EventType == AlpmEventType.TransactionStart)
+                {
+                    ProcessingMessage = "Starting transaction...";
+                }
+                ProgressValue = 0;
+                ProgressIndeterminate = true;
             }
-            else if (args.EventType == AlpmEventType.PackageOperationDone)
+            else if (args.EventType == AlpmEventType.PackageOperationDone || args.EventType == AlpmEventType.TransactionDone)
             {
-                IsProcessing = false;
-                ProcessingMessage = string.Empty;
+                if (args.EventType == AlpmEventType.TransactionDone)
+                {
+                    IsProcessing = false;
+                    ProcessingMessage = string.Empty;
+                    ProgressValue = 0;
+                }
             }
         });
 
+        Observable.FromEventPattern<AlpmProgressEventArgs>(
+            h => alpmManager.Progress += h,
+            h => alpmManager.Progress -= h)
+            .ObserveOn(scheduler)
+            .Subscribe(pattern =>
+            {
+                var args = pattern.EventArgs;
+                if (args.Percent.HasValue)
+                {
+                    ProgressValue = args.Percent.Value;
+                    ProgressIndeterminate = false;
+                }
+                
+                if (!string.IsNullOrEmpty(args.PackageName))
+                {
+                    ProcessingMessage = $"Processing {args.PackageName}...";
+                }
+            });
+
         packageOperationEvents
-            .Throttle(TimeSpan.FromSeconds(5), scheduler)
+            .Where(e => e.EventArgs.EventType != AlpmEventType.TransactionDone)
+            .Throttle(TimeSpan.FromSeconds(30), scheduler)
             .Subscribe(_ =>
             {
                 IsProcessing = false;
@@ -87,6 +120,20 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     {
         get => _isProcessing;
         set => this.RaiseAndSetIfChanged(ref _isProcessing, value);
+    }
+
+    private int _progressValue;
+    public int ProgressValue
+    {
+        get => _progressValue;
+        set => this.RaiseAndSetIfChanged(ref _progressValue, value);
+    }
+
+    private bool _progressIndeterminate = true;
+    public bool ProgressIndeterminate
+    {
+        get => _progressIndeterminate;
+        set => this.RaiseAndSetIfChanged(ref _progressIndeterminate, value);
     }
 
     private string _processingMessage = string.Empty;
