@@ -15,10 +15,10 @@ namespace Shelly_UI.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase, IScreen
 {
-    
     private PackageViewModel? _cachedPackages;
 
-    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager, IScheduler? scheduler = null)
+    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
+        IScheduler? scheduler = null)
     {
         scheduler ??= RxApp.MainThreadScheduler;
 
@@ -30,6 +30,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             .ObserveOn(scheduler)
             .Subscribe(pattern =>
             {
+                //Console.WriteLine($@"Got here:" + pattern.EventArgs.EventType);
                 var args = pattern.EventArgs;
                 switch (args.EventType)
                 {
@@ -49,6 +50,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                         {
                             ProcessingMessage = "Processing...";
                         }
+
                         ProgressValue = 0;
                         ProgressIndeterminate = true;
                         break;
@@ -69,18 +71,29 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             });
 
         Observable.FromEventPattern<AlpmProgressEventArgs>(
-            h => alpmManager.Progress += h,
-            h => alpmManager.Progress -= h)
+                h => alpmManager.Progress += h,
+                h => alpmManager.Progress -= h)
             .ObserveOn(scheduler)
             .Subscribe(pattern =>
             {
+                if (pattern.EventArgs.ProgressType == AlpmProgressType.AddStart || pattern.EventArgs.ProgressType == AlpmProgressType.RemoveStart)
+                {
+                    IsProcessing = true;
+                }
+
+                if (pattern.EventArgs.Percent >= 100)
+                {
+                    IsProcessing = false;
+                }
+
+                Console.Error.WriteLine($@"Got here:" + pattern.EventArgs.ProgressType);
                 var args = pattern.EventArgs;
                 if (args.Percent.HasValue)
                 {
                     ProgressValue = args.Percent.Value;
                     ProgressIndeterminate = false;
                 }
-                
+
                 if (!string.IsNullOrEmpty(args.PackageName))
                 {
                     var prefix = args.ProgressType == AlpmProgressType.PackageDownload ? "Downloading" : "Processing";
@@ -98,6 +111,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             .Throttle(TimeSpan.FromSeconds(30), scheduler)
             .Subscribe(_ =>
             {
+                Console.Error.WriteLine("Resetting processing state");
                 IsProcessing = false;
                 ProcessingMessage = string.Empty;
             });
@@ -110,22 +124,24 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         });
         GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this)));
         GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
-        GoSetting = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new SettingViewModel(this, configService)));
+        GoSetting = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new SettingViewModel(this, configService)));
 
         MenuItems = new()
         {
-            new MenuItemViewModel( Resources.Home, MaterialIconKind.Home, "Home page", GoHome),
-            new MenuItemViewModel(Resources.Packages,MaterialIconKind.PackageVariantClosed,"View New Packages to Install",
+            new MenuItemViewModel(Resources.Home, MaterialIconKind.Home, "Home page", GoHome),
+            new MenuItemViewModel(Resources.Packages, MaterialIconKind.PackageVariantClosed,
+                "View New Packages to Install",
                 GoPackages),
             new MenuItemViewModel(Resources.Updates, MaterialIconKind.Update, "Update Existing Packages", GoUpdate),
             new MenuItemViewModel(Resources.Remove, MaterialIconKind.Delete, "Delete Existing Packages", GoRemove),
             new MenuItemViewModel(Resources.Settings, MaterialIconKind.Settings, "Application Settings", GoSetting)
         };
-        
+
         GoHome.Execute(Unit.Default);
     }
 
-    public ObservableCollection<MenuItemViewModel> MenuItems { get; } 
+    public ObservableCollection<MenuItemViewModel> MenuItems { get; }
 
     private bool _isPaneOpen = false;
 
@@ -136,6 +152,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private bool _isProcessing;
+
     public bool IsProcessing
     {
         get => _isProcessing;
@@ -143,6 +160,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private int _progressValue;
+
     public int ProgressValue
     {
         get => _progressValue;
@@ -150,6 +168,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private bool _progressIndeterminate = true;
+
     public bool ProgressIndeterminate
     {
         get => _progressIndeterminate;
@@ -157,12 +176,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private string _processingMessage = string.Empty;
+
     public string ProcessingMessage
     {
         get => _processingMessage;
         set => this.RaiseAndSetIfChanged(ref _processingMessage, value);
     }
-    
+
     public void TogglePane()
     {
         IsPaneOpen = !IsPaneOpen;
@@ -183,8 +203,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     public static ReactiveCommand<Unit, IRoutableViewModel> GoPackages { get; set; } = null!;
 
     #endregion
-   
+
     #region MenuItemSelectionNav
+
     private MenuItemViewModel? _selectedMenuItem;
 
     public MenuItemViewModel? SelectedMenuItem
@@ -200,6 +221,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             }
         }
     }
+
     #endregion
 }
 
