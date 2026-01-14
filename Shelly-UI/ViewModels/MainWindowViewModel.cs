@@ -206,20 +206,24 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
     #region MenuItemSelectionNav
 
-    private MenuItemViewModel? _selectedMenuItem;
-
-    public MenuItemViewModel? SelectedMenuItem
+    public void TogglePackageMenu()
     {
-        get => _selectedMenuItem;
-        set
+        if (!IsPaneOpen)
         {
-            this.RaiseAndSetIfChanged(ref _selectedMenuItem, value);
-
-            if (value?.Command != null)
-            {
-                value.Command.Execute(Unit.Default);
-            }
+            IsPaneOpen = true;
+            IsPackageOpen = true;
         }
+        else
+        {
+            IsPackageOpen = !IsPackageOpen;
+        }
+    }
+    
+    private bool _isPackageOpen;
+    public bool IsPackageOpen 
+    {
+        get => _isPackageOpen;
+        set => this.RaiseAndSetIfChanged(ref _isPackageOpen, value);
     }
 
     #endregion

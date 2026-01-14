@@ -16,11 +16,17 @@
         MinWidth="800"
         Width="800"
         Height="600">
+    <Window.Styles>
+        <Style Selector="ToggleButton#ManagementToggle:pointerover /template/ Border">
+            <Setter Property="Background" Value="#1AFFFFFF" />
+        </Style>
+    </Window.Styles>
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel />
     </Design.DataContext>
+
     <Grid>
         <SplitView IsPaneOpen="{Binding IsPaneOpen}"
                    CompactPaneLength="66"
@@ -28,29 +34,85 @@
                    OpenPaneLength="200"
                    PaneBackground="{DynamicResource SystemChromeMediumColor}">
             <SplitView.Pane>
-                <StackPanel Spacing="5" Margin="5">
-                    <Button Command="{Binding TogglePane}"
-                            HorizontalAlignment="Left"
-                            Background="Transparent"
-                            Padding="10"
-                            Margin="5, 0 ,0,0">
-                        <icons:MaterialIcon Kind="Menu" Width="24" Height="24" />
-                    </Button>
-                    <ListBox ItemsSource="{Binding MenuItems}"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             IsHitTestVisible="True"
-                             SelectedItem="{Binding SelectedMenuItem}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:MenuItemViewModel">
-                                <StackPanel Orientation="Horizontal" Spacing="15" Margin="5"  IsHitTestVisible="False">
-                                    <icons:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" />
-                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                <Grid>
+                    <StackPanel Spacing="5">
+                        <Button Command="{Binding TogglePane}"
+                                HorizontalAlignment="Left"
+                                Background="Transparent"
+                                Width="66" Height="48"
+                                Padding="0">
+                            <icons:MaterialIcon Kind="Menu" Width="24" Height="24" HorizontalAlignment="Center" />
+                        </Button>
+                        <Button Command="{Binding GoHome}"
+                                HorizontalAlignment="Stretch"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0">
+                            <Grid ColumnDefinitions="66, *" Height="40" Background="Transparent">
+                                <icons:MaterialIcon Kind="Home" Width="24" Height="24" HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="Home" VerticalAlignment="Center"
+                                           IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
+                            </Grid>
+                        </Button>
+                        <Button Command="{Binding TogglePackageMenu}"
+                                HorizontalAlignment="Stretch"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0">
+                            <Grid ColumnDefinitions="66, *" Height="40">
+                                <icons:MaterialIcon Kind="PackageVariant" Width="22" Height="22"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="Packages"
+                                           VerticalAlignment="Center"
+                                           IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
+                            </Grid>
+                        </Button>
+                        <StackPanel Margin="10,0,0,10" Spacing="5"
+                                    HorizontalAlignment="Center">
+                            <StackPanel.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="IsPackageOpen" />
+                                    <Binding Path="$parent[SplitView].IsPaneOpen" />
+                                </MultiBinding>
+                            </StackPanel.IsVisible>
+                            <Button Classes="SubMenuItem" Command="{Binding GoPackages}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18"/>
+                                    <TextBlock Text="Install Packages" FontSize="13" />
                                 </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </StackPanel>
+                            </Button>
+                            <Button Classes="SubMenuItem" Command="{Binding GoUpdate}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
+                                    <TextBlock Text="Updates Packages" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="SubMenuItem" Command="{Binding GoRemove}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                    <TextBlock Text="Remove Packages" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                    </StackPanel>
+                    <Button Command="{Binding GoSetting}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0">
+                        <Grid ColumnDefinitions="66, *" Height="48" Background="Transparent">
+                            <icons:MaterialIcon Kind="Settings" Width="24" Height="24" HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="Settings" VerticalAlignment="Center"
+                                       IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
+                        </Grid>
+                    </Button>
+                </Grid>
+
             </SplitView.Pane>
             <avalonia:RoutedViewHost Grid.Row="0" Router="{Binding Router}" PageTransition="{x:Null}">
                 <avalonia:RoutedViewHost.DefaultContent>
@@ -76,14 +138,14 @@
                                FontSize="20"
                                FontWeight="Bold"
                                HorizontalAlignment="Center" />
-                    
-                    <ProgressBar Value="{Binding ProgressValue}" 
-                                 IsIndeterminate="{Binding ProgressIndeterminate}" 
-                                 Height="8" 
-                                 Minimum="0" 
+
+                    <ProgressBar Value="{Binding ProgressValue}"
+                                 IsIndeterminate="{Binding ProgressIndeterminate}"
+                                 Height="8"
+                                 Minimum="0"
                                  Maximum="100"
                                  CornerRadius="4" />
-                    
+
                     <TextBlock Text="{Binding ProcessingMessage}"
                                HorizontalAlignment="Center"
                                FontSize="14"
