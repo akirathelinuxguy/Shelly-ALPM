@@ -4,6 +4,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Collections.ObjectModel;
 using System.Reactive;
+using System.Reactive.Subjects;
 using Shelly_UI.Assets;
 using ReactiveUI;
 using Material.Icons;
@@ -116,6 +117,38 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                 ProcessingMessage = string.Empty;
             });
 
+        var questionResponseSubject = new Subject<int>();
+        RespondToQuestion = ReactiveCommand.Create<string>(response =>
+        {
+            if (int.TryParse(response, out var result))
+            {
+                questionResponseSubject.OnNext(result);
+            }
+            else
+            {
+                questionResponseSubject.OnNext(0); // Default to No
+            }
+            ShowQuestion = false;
+        });
+
+        Observable.FromEventPattern<AlpmQuestionEventArgs>(
+                h => alpmManager.Question += h,
+                h => alpmManager.Question -= h)
+            .ObserveOn(scheduler)
+            .SelectMany(async pattern =>
+            {
+                var args = pattern.EventArgs;
+                QuestionTitle = GetQuestionTitle(args.QuestionType);
+                QuestionText = args.QuestionText;
+                ShowQuestion = true;
+
+                // Wait for user response
+                var response = await questionResponseSubject.FirstAsync();
+                args.Response = response;
+                return Unit.Default;
+            })
+            .Subscribe();
+
         GoHome = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new HomeViewModel(this, appCache)));
         GoPackages = ReactiveCommand.CreateFromObservable(() =>
         {
@@ -183,6 +216,29 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         set => this.RaiseAndSetIfChanged(ref _processingMessage, value);
     }
 
+    private bool _showQuestion;
+    public bool ShowQuestion
+    {
+        get => _showQuestion;
+        set => this.RaiseAndSetIfChanged(ref _showQuestion, value);
+    }
+
+    private string _questionTitle = string.Empty;
+    public string QuestionTitle
+    {
+        get => _questionTitle;
+        set => this.RaiseAndSetIfChanged(ref _questionTitle, value);
+    }
+
+    private string _questionText = string.Empty;
+    public string QuestionText
+    {
+        get => _questionText;
+        set => this.RaiseAndSetIfChanged(ref _questionText, value);
+    }
+
+    public ReactiveCommand<string, Unit> RespondToQuestion { get; }
+
     public void TogglePane()
     {
         IsPaneOpen = !IsPaneOpen;
@@ -224,6 +280,20 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     {
         get => _isPackageOpen;
         set => this.RaiseAndSetIfChanged(ref _isPackageOpen, value);
+    }
+
+    private string GetQuestionTitle(AlpmQuestionType questionType)
+    {
+        return questionType switch
+        {
+            AlpmQuestionType.InstallIgnorePkg => "Install Ignore Package?",
+            AlpmQuestionType.ReplacePkg => "Replace Package?",
+            AlpmQuestionType.ConflictPkg => "Package Conflict",
+            AlpmQuestionType.CorruptedPkg => "Corrupted Package",
+            AlpmQuestionType.ImportKey => "Import GPG Key?",
+            AlpmQuestionType.SelectProvider => "Select Provider",
+            _ => "Package Manager Question"
+        };
     }
 
     #endregion

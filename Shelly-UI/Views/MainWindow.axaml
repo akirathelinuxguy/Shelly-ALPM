@@ -154,5 +154,43 @@
                 </StackPanel>
             </Border>
         </Panel>
+
+        <Panel IsVisible="{Binding ShowQuestion}" Background="#80000000">
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    CornerRadius="12"
+                    Padding="30"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    MinWidth="400"
+                    MaxWidth="600"
+                    BoxShadow="0 8 32 0 #60000000">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="{Binding QuestionTitle}"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+
+                    <TextBlock Text="{Binding QuestionText}"
+                               HorizontalAlignment="Center"
+                               FontSize="14"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+                        <Button Content="Yes"
+                                Command="{Binding RespondToQuestion}"
+                                CommandParameter="1"
+                                Width="100"
+                                HorizontalContentAlignment="Center"
+                                Classes="accent" />
+                        <Button Content="No"
+                                Command="{Binding RespondToQuestion}"
+                                CommandParameter="0"
+                                Width="100"
+                                HorizontalContentAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
     </Grid>
 </Window>
