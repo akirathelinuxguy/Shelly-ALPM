@@ -86,7 +86,7 @@
                             <Button Classes="SubMenuItem" Command="{Binding GoUpdate}" Background="Transparent">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
-                                    <TextBlock Text="Updates Packages" FontSize="13" />
+                                    <TextBlock Text="Update Packages" FontSize="13" />
                                 </StackPanel>
                             </Button>
                             <Button Classes="SubMenuItem" Command="{Binding GoRemove}" Background="Transparent">
