@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Build and Test
 
 on:
   push:
@@ -24,14 +24,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libalpm-dev libx11-dev libice-dev libsm-dev libfontconfig1-dev libfreetype6-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxrandr-dev libxrender-dev libxtst-dev libgl1-mesa-dev libgles2-mesa-dev libgtk-3-dev
 
-    - name: Publish Shelly-UI
-      run: dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -r linux-x64 --self-contained true /p:PublishAot=true -o publish/shelly-ui
+    - name: Restore dependencies
+      run: dotnet restore
 
-    - name: Upload Shelly-UI artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: shelly-ui-linux-x64-v3
-        path: |
-          publish/shelly-ui/Shelly-UI
-          publish/shelly-ui/libHarfBuzzSharp.so
-          publish/shelly-ui/libSkiaSharp.so
+    - name: Build
+      run: dotnet build --no-restore
+
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
