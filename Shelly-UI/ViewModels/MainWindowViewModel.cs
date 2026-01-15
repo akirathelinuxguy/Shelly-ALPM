@@ -8,6 +8,7 @@ using System.Reactive.Subjects;
 using Shelly_UI.Assets;
 using ReactiveUI;
 using Material.Icons;
+using Microsoft.Extensions.DependencyInjection;
 using PackageManager.Alpm;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
@@ -17,10 +18,12 @@ namespace Shelly_UI.ViewModels;
 public class MainWindowViewModel : ViewModelBase, IScreen
 {
     private PackageViewModel? _cachedPackages;
+    private readonly IServiceProvider _services;
 
-    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
+    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager, IServiceProvider services,
         IScheduler? scheduler = null)
     {
+        _services = services;
         scheduler ??= RxApp.MainThreadScheduler;
 
         var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
@@ -157,8 +160,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         });
         GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this)));
         GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
-        GoSetting = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new SettingViewModel(this, configService)));
+        GoSetting = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new SettingViewModel(this, configService, _services.GetRequiredService<IUpdateService>())));
         
         GoHome.Execute(Unit.Default);
     }

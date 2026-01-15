@@ -30,6 +30,7 @@ public partial class App : Application
         var collection = new ServiceCollection();
         collection.AddSingleton<IConfigService, ConfigService>();
         collection.AddSingleton<IAppCache, AppCache>();
+        collection.AddSingleton<IUpdateService, GitHubUpdateService>();
         collection.AddSingleton<ThemeService>();
 
         // Creates a ServiceProvider containing services from the provided IServiceCollection
@@ -47,7 +48,7 @@ public partial class App : Application
         
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(configService, cacheService, AlpmService.Instance),
+                DataContext = new MainWindowViewModel(configService, cacheService, AlpmService.Instance, _services),
             };
         }
 

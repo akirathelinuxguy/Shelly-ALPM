@@ -17,11 +17,13 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private string _selectedTheme;
 
     private readonly IConfigService _configService;
+    private readonly IUpdateService _updateService;
 
-    public SettingViewModel(IScreen screen, IConfigService configService)
+    public SettingViewModel(IScreen screen, IConfigService configService, IUpdateService updateService)
     {
         HostScreen = screen;
         _configService = configService;
+        _updateService = updateService;
         var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
         if (fluentTheme != null && fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var dark) && dark is { } pal)
         {
@@ -117,18 +119,21 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     public ReactiveCommand<Unit, Unit> CheckForUpdatesCommand { get; }
 
-    public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share");
+    public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") && !AppContext.BaseDirectory.StartsWith("/usr/share/Shelly");
 
     private async Task CheckForUpdates()
     {
-        if (AppContext.BaseDirectory.StartsWith("/usr/share"))
+        if (AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") || AppContext.BaseDirectory.StartsWith("/usr/share/Shelly"))
         {
             return;
         }
 
-        var appcastUrl = "https://github.com/ZoeyErinBauer/Shelly-ALPM/releases/latest/download/appcast.xml";
-
-
-        
+        bool updateAvailable = await _updateService.CheckForUpdateAsync();
+        if (updateAvailable)
+        {
+            // Here you might want to show a dialog to the user
+            // For now, as per requirement, we proceed with download and install
+            await _updateService.DownloadAndInstallUpdateAsync();
+        }
     }
 }

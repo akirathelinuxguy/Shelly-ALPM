@@ -6,6 +6,9 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(ShellyConfig))]
 [JsonSerializable(typeof(CachedRssModel))]
 [JsonSerializable(typeof(RssModel))]
+[JsonSerializable(typeof(GitHubRelease))]
+[JsonSerializable(typeof(GitHubAsset))]
+[JsonSerializable(typeof(GitHubAsset[]))]
 internal partial class ShellyUIJsonContext : JsonSerializerContext
 {
 }
