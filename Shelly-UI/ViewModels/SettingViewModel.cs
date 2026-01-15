@@ -9,8 +9,10 @@ using Avalonia.Themes.Fluent;
 using ReactiveUI;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Velopack;
-using Velopack.Sources;
+using NetSparkleUpdater;
+using NetSparkleUpdater.SignatureVerifiers;
+using NetSparkleUpdater.UI.Avalonia;
+using NetSparkleUpdater.Enums;
 
 namespace Shelly_UI.ViewModels;
 
@@ -128,15 +130,12 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             return;
         }
 
-        var mgr = new UpdateManager(new GithubSource("https://github.com/ZoeyErinBauer/Shelly-ALPM", null, false));
-
-        var newVersion = await mgr.CheckForUpdatesAsync();
-        if (newVersion == null)
+        var appcastUrl = "https://github.com/ZoeyErinBauer/Shelly-ALPM/releases/latest/download/appcast.xml";
+        var updater = new SparkleUpdater(appcastUrl, new Ed25519Checker(SecurityMode.Unsafe))
         {
-            return;
-        }
+            UIFactory = new NetSparkleUpdater.UI.Avalonia.UIFactory()
+        };
 
-        await mgr.DownloadUpdatesAsync(newVersion);
-        mgr.ApplyUpdatesAndRestart(newVersion);
+        await updater.CheckForUpdatesAtUserRequest();
     }
 }
