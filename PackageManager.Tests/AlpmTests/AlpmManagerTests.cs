@@ -63,6 +63,51 @@ public class AlpmManagerTests
     }
 
     [Test]
+    public void QuestionEvent_IsTriggered()
+    {
+        // Arrange
+        var questionTriggered = false;
+        AlpmQuestionType? capturedType = null;
+        _manager.Question += (sender, args) =>
+        {
+            questionTriggered = true;
+            capturedType = args.QuestionType;
+            args.Response = 0; // Answer No
+        };
+
+        // Create a fake question struct
+        var question = new AlpmQuestionAny
+        {
+            Type = (int)AlpmQuestionType.InstallIgnorePkg,
+            Answer = 1
+        };
+
+        var questionPtr = Marshal.AllocHGlobal(Marshal.SizeOf<AlpmQuestionAny>());
+        try
+        {
+            Marshal.StructureToPtr(question, questionPtr, false);
+
+            // Act
+            // Use reflection to call the private HandleQuestion method
+            var method = typeof(AlpmManager).GetMethod("HandleQuestion",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            method.Invoke(_manager, new object[] { questionPtr });
+
+            // Assert
+            Assert.That(questionTriggered, Is.True);
+            Assert.That(capturedType, Is.EqualTo(AlpmQuestionType.InstallIgnorePkg));
+
+            // Verify the answer was written back (Response 0 we set in event handler)
+            var updatedQuestion = Marshal.PtrToStructure<AlpmQuestionAny>(questionPtr);
+            Assert.That(updatedQuestion.Answer, Is.EqualTo(0));
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(questionPtr);
+        }
+    }
+
+    [Test]
     public void Initialize_Succeeds()
     {
         Assert.DoesNotThrow(() => _manager.Initialize());

@@ -23,6 +23,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
     public event EventHandler<AlpmProgressEventArgs>? Progress;
     public event EventHandler<AlpmPackageOperationEventArgs>? PackageOperation;
+    public event EventHandler<AlpmQuestionEventArgs>? Question;
 
     public void IntializeWithSync()
     {
@@ -140,27 +141,28 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
     private void HandleQuestion(IntPtr questionPtr)
     {
-        //TODO: HANDLE QUESTIONS BETTER RATHER THAN AUTOMATICALLY ANSWERING YES
-        // 1. Read the 'type' of the question (usually the first 4 bytes of the struct)
         var question = Marshal.PtrToStructure<AlpmQuestionAny>(questionPtr);
+        var questionType = (AlpmQuestionType)question.Type;
 
-        var questionText = question.Type switch
+        var questionText = questionType switch
         {
-            1 => "Install IgnorePkg?", // ALPM_QUESTION_INSTALL_IGNOREPKG
-            2 => "Replace package?", // ALPM_QUESTION_REPLACE_PKG
-            4 => "Conflict found. Remove?", // ALPM_QUESTION_CONFLICT_PKG
-            8 => "Corrupted pkg. Delete?", // ALPM_QUESTION_CORRUPTED_PKG
-            16 => "Import GPG key?", // ALPM_QUESTION_IMPORT_KEY
-            32 => "Select provider?", // ALPM_QUESTION_SELECT_PROVIDER
+            AlpmQuestionType.InstallIgnorePkg => "Install IgnorePkg?",
+            AlpmQuestionType.ReplacePkg => "Replace package?",
+            AlpmQuestionType.ConflictPkg => "Conflict found. Remove?",
+            AlpmQuestionType.CorruptedPkg => "Corrupted pkg. Delete?",
+            AlpmQuestionType.ImportKey => "Import GPG key?",
+            AlpmQuestionType.SelectProvider => "Select provider?",
             _ => $"Unknown question type: {question.Type}"
         };
 
-        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText} (Answering Yes)");
+        var args = new AlpmQuestionEventArgs(questionType, questionText);
+        Question?.Invoke(this, args);
 
-        // 3. Write '1' (Yes/True) back to the answer field.
-        // In libalpm, the 'answer' field is typically at offset 8 
-        // for simple Yes/No questions.
-        Marshal.WriteInt32(questionPtr, 8, 1);
+        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText} (Answering {args.Response})");
+
+        // Write the response back to the answer field.
+        question.Answer = args.Response;
+        Marshal.StructureToPtr(question, questionPtr, false);
     }
 
 

@@ -29,8 +29,10 @@ jobs:
 
     - name: Package Binaries
       run: |
+        cp install.sh publish/shelly-ui/
+        cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
         cd publish/shelly-ui
-        tar -czvf ../shelly-ui-linux-x64-v3.tar.gz Shelly-UI libHarfBuzzSharp.so libSkiaSharp.so
+        tar -czvf ../shelly-ui-linux-x64-v3.tar.gz Shelly-UI libHarfBuzzSharp.so libSkiaSharp.so install.sh shellylogo.png
 
     - name: Create Release
       uses: softprops/action-gh-release@v2

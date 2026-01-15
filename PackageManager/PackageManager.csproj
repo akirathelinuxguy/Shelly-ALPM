@@ -5,6 +5,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <!-- Enable Native AOT -->
         <PublishAot>true</PublishAot>
+        <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     </PropertyGroup>
 
 </Project>

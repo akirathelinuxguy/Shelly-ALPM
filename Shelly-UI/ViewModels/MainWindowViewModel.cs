@@ -4,6 +4,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Collections.ObjectModel;
 using System.Reactive;
+using System.Reactive.Subjects;
 using Shelly_UI.Assets;
 using ReactiveUI;
 using Material.Icons;
@@ -116,6 +117,38 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                 ProcessingMessage = string.Empty;
             });
 
+        var questionResponseSubject = new Subject<int>();
+        RespondToQuestion = ReactiveCommand.Create<string>(response =>
+        {
+            if (int.TryParse(response, out var result))
+            {
+                questionResponseSubject.OnNext(result);
+            }
+            else
+            {
+                questionResponseSubject.OnNext(0); // Default to No
+            }
+            ShowQuestion = false;
+        });
+
+        Observable.FromEventPattern<AlpmQuestionEventArgs>(
+                h => alpmManager.Question += h,
+                h => alpmManager.Question -= h)
+            .ObserveOn(scheduler)
+            .SelectMany(async pattern =>
+            {
+                var args = pattern.EventArgs;
+                QuestionTitle = GetQuestionTitle(args.QuestionType);
+                QuestionText = args.QuestionText;
+                ShowQuestion = true;
+
+                // Wait for user response
+                var response = await questionResponseSubject.FirstAsync();
+                args.Response = response;
+                return Unit.Default;
+            })
+            .Subscribe();
+
         GoHome = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new HomeViewModel(this, appCache)));
         GoPackages = ReactiveCommand.CreateFromObservable(() =>
         {
@@ -126,23 +159,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService)));
-
-        MenuItems = new()
-        {
-            new MenuItemViewModel(Resources.Home, MaterialIconKind.Home, "Home page", GoHome),
-            new MenuItemViewModel(Resources.Packages, MaterialIconKind.PackageVariantClosed,
-                "View New Packages to Install",
-                GoPackages),
-            new MenuItemViewModel(Resources.Updates, MaterialIconKind.Update, "Update Existing Packages", GoUpdate),
-            new MenuItemViewModel(Resources.Remove, MaterialIconKind.Delete, "Delete Existing Packages", GoRemove),
-            new MenuItemViewModel(Resources.Settings, MaterialIconKind.Settings, "Application Settings", GoSetting)
-        };
-
+        
         GoHome.Execute(Unit.Default);
     }
-
-    public ObservableCollection<MenuItemViewModel> MenuItems { get; }
-
+    
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen
@@ -183,6 +203,29 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         set => this.RaiseAndSetIfChanged(ref _processingMessage, value);
     }
 
+    private bool _showQuestion;
+    public bool ShowQuestion
+    {
+        get => _showQuestion;
+        set => this.RaiseAndSetIfChanged(ref _showQuestion, value);
+    }
+
+    private string _questionTitle = string.Empty;
+    public string QuestionTitle
+    {
+        get => _questionTitle;
+        set => this.RaiseAndSetIfChanged(ref _questionTitle, value);
+    }
+
+    private string _questionText = string.Empty;
+    public string QuestionText
+    {
+        get => _questionText;
+        set => this.RaiseAndSetIfChanged(ref _questionText, value);
+    }
+
+    public ReactiveCommand<string, Unit> RespondToQuestion { get; }
+
     public void TogglePane()
     {
         IsPaneOpen = !IsPaneOpen;
@@ -206,6 +249,15 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
     #region MenuItemSelectionNav
 
+    private bool _isPackageOpen;
+    
+    
+    public bool IsPackageOpen 
+    {
+        get => _isPackageOpen;
+        set => this.RaiseAndSetIfChanged(ref _isPackageOpen, value);
+    }
+    
     public void TogglePackageMenu()
     {
         if (!IsPaneOpen)
@@ -219,11 +271,78 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         }
     }
     
-    private bool _isPackageOpen;
-    public bool IsPackageOpen 
+    private bool _isAurOpen;
+    public bool IsAurOpen 
     {
-        get => _isPackageOpen;
-        set => this.RaiseAndSetIfChanged(ref _isPackageOpen, value);
+        get => _isAurOpen;
+        set => this.RaiseAndSetIfChanged(ref _isAurOpen, value);
+    }
+    
+    public void ToggleAurMenu()
+    {
+        if (!IsPaneOpen)
+        {
+            IsPaneOpen = true;
+            IsAurOpen = true;
+        }
+        else
+        {
+            IsAurOpen = !IsAurOpen;
+        }
+    }
+    
+    private bool _isSnapOpen;
+    public bool IsSnapOpen 
+    {
+        get => _isSnapOpen;
+        set => this.RaiseAndSetIfChanged(ref _isSnapOpen, value);
+    }
+    
+    public void ToggleSnapMenu()
+    {
+        if (!IsPaneOpen)
+        {
+            IsPaneOpen = true;
+            IsSnapOpen = true;
+        }
+        else
+        {
+            IsSnapOpen = !IsSnapOpen;
+        }
+    }
+    
+    private bool _isFlatpakOpen;
+    public bool IsFlatpakOpen 
+    {
+        get => _isFlatpakOpen;
+        set => this.RaiseAndSetIfChanged(ref _isFlatpakOpen, value);
+    }
+    
+    public void ToggleFlatpakMenu()
+    {
+        if (!IsPaneOpen)
+        {
+            IsPaneOpen = true;
+            IsFlatpakOpen = true;
+        }
+        else
+        {
+            IsFlatpakOpen = !IsFlatpakOpen;
+        }
+    }
+
+    private string GetQuestionTitle(AlpmQuestionType questionType)
+    {
+        return questionType switch
+        {
+            AlpmQuestionType.InstallIgnorePkg => "Install Ignore Package?",
+            AlpmQuestionType.ReplacePkg => "Replace Package?",
+            AlpmQuestionType.ConflictPkg => "Package Conflict",
+            AlpmQuestionType.CorruptedPkg => "Corrupted Package",
+            AlpmQuestionType.ImportKey => "Import GPG Key?",
+            AlpmQuestionType.SelectProvider => "Select Provider",
+            _ => "Package Manager Question"
+        };
     }
 
     #endregion
