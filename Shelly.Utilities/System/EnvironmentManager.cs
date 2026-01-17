@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Shelly.Utilities.Extensions;
 using Shelly.Utilities.System.Enums;
 
@@ -21,6 +22,32 @@ public static class EnvironmentManager
                 or SupportedDesktopEnvironments.Unknown => CreateWMLaunchVars(),
             _ => throw new ArgumentOutOfRangeException()
         };
+    }
+
+    public static string UserPath
+    {
+        get
+        {
+            // If running via pkexec, get original user's home
+            var pkexecUid = Environment.GetEnvironmentVariable("PKEXEC_UID");
+            if (pkexecUid != null)
+            {
+                var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "getent",
+                    Arguments = $"passwd {pkexecUid}",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false
+                });
+                process?.WaitForExit();
+                var output = process?.StandardOutput.ReadLine();
+                var home = output?.Split(':')[5];
+                if (!string.IsNullOrEmpty(home)) return home;
+            }
+        
+            return Environment.GetEnvironmentVariable("HOME") 
+                   ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        }
     }
 
     private static string CreateWMLaunchVars()
