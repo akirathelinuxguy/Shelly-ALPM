@@ -10,18 +10,13 @@ public static class EnvironmentManager
 
     public static string CreateWindowManagerVars()
     {
-        return GetDesktopEnvironment() switch
-        {
-            SupportedDesktopEnvironments.KDE or SupportedDesktopEnvironments.GNOME or SupportedDesktopEnvironments.XFCE
-                or SupportedDesktopEnvironments.Cinnamon or SupportedDesktopEnvironments.MATE
-                or SupportedDesktopEnvironments.LXQt or SupportedDesktopEnvironments.LXDE
-                or SupportedDesktopEnvironments.Budgie or SupportedDesktopEnvironments.Pantheon
-                or SupportedDesktopEnvironments.COSMIC => "",
-            SupportedDesktopEnvironments.Hyprland or SupportedDesktopEnvironments.Sway
-                or SupportedDesktopEnvironments.Niri or SupportedDesktopEnvironments.i3
-                or SupportedDesktopEnvironments.Unknown => CreateWMLaunchVars(),
-            _ => throw new ArgumentOutOfRangeException()
-        };
+        var sessionType = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE");
+        if (sessionType == "wayland")
+            return $"WAYLAND_DISPLAY={Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")} " +
+                   $"XDG_RUNTIME_DIR={Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR")}";
+
+        return $"DISPLAY={Environment.GetEnvironmentVariable("DISPLAY")} " +
+               $"XAUTHORITY={Environment.GetEnvironmentVariable("XAUTHORITY")}";
     }
 
     public static string UserPath
@@ -44,8 +39,8 @@ public static class EnvironmentManager
                 var home = output?.Split(':')[5];
                 if (!string.IsNullOrEmpty(home)) return home;
             }
-        
-            return Environment.GetEnvironmentVariable("HOME") 
+
+            return Environment.GetEnvironmentVariable("HOME")
                    ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         }
     }

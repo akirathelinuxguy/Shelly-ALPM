@@ -64,7 +64,7 @@ sealed class Program
                 {
                     FileName = "pkexec",
                     Arguments =
-                        $"env {wmVars} DISPLAY={Environment.GetEnvironmentVariable("DISPLAY")} XAUTHORITY={Environment.GetEnvironmentVariable("XAUTHORITY")} {Process.GetCurrentProcess().MainModule?.FileName} {string.Join(" ", args)}",
+                        $"env {wmVars} {Process.GetCurrentProcess().MainModule?.FileName} {string.Join(" ", args)}",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
