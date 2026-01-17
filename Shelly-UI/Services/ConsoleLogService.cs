@@ -20,48 +20,29 @@ public class ConsoleLogService : TextWriter
     private ConsoleLogService()
     {
         _originalOut = Console.Out;
-        Console.SetOut(this);
-        Console.SetError(this);
+        _originalError = Console.Error;
         
-        // This log proves the redirection is active
-        this.WriteLine("Logging Service Active.");
+        Console.SetError(this);
     }
 
     public override void WriteLine(string? value)
     {
         if (value != null)
         {
-            // Use Task.Run if Schedule is failing silently in AOT
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 Logs.Add($"[{DateTime.Now:HH:mm:ss}] {value}");
                 if (Logs.Count > 500) Logs.RemoveAt(0);
             });
         }
-        _originalOut.WriteLine(value);
+        _originalError.WriteLine(value);
     }
     
-    public void LogError(string message)
-    {
-        RxApp.MainThreadScheduler.Schedule(() =>
-        {
-            Logs.Add($"[{DateTime.Now:HH:mm:ss}] [ERROR] {message}");
-            if (Logs.Count > 500) Logs.RemoveAt(0);
-        });
-        _originalError.WriteLine(message);
-    }
-
-    // Overriding this ensures that objects passed to Console.WriteLine are caught
     public override void WriteLine(object? value) => WriteLine(value?.ToString());
-
-    // Basic Write to catch partials without complex buffering for now
+    
     public override void Write(string? value) 
     {
-        _originalOut.Write(value);
-        if (value != null && value.EndsWith(Environment.NewLine))
-        {
-            WriteLine(value.TrimEnd());
-        }
+        _originalError.Write(value);
     }
 
     public override Encoding Encoding => Encoding.UTF8;

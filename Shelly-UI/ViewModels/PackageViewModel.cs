@@ -82,7 +82,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Failed to sync packages: {e.Message}");
+            Console.Error.WriteLine($"Failed to sync packages: {e.Message}");
         }
     }
 
@@ -171,7 +171,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     {
         package.IsChecked = !package.IsChecked;
 
-        Console.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
+        Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
     }
     
     private bool _isBottomPanelCollapsed = true;
@@ -193,10 +193,6 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         IsBottomPanelCollapsed = !IsBottomPanelCollapsed;
     }
     
-    public GridLength ConsoleHeight => _configService.LoadConfig().ConsoleEnabled 
-        ? new GridLength(10) 
-        : new GridLength(0);
-
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
 
     public ReactiveCommand<Unit, Unit> AlpmInstallCommand { get; }
