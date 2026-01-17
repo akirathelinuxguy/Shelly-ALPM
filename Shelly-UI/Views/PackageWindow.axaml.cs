@@ -5,6 +5,11 @@ using ReactiveUI.Avalonia;
 using Shelly_UI.ViewModels;
 using System.Diagnostics;
 using System;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.VisualTree;
+using Shelly_UI.Models;
 
 namespace Shelly_UI.Views;
 
@@ -138,5 +143,16 @@ public partial class PackageWindow : ReactiveUserControl<PackageViewModel>
         {
             psi.ArgumentList.Add($"{key}={value}");
         }
+    }
+
+    private void DataGrid_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        var row = (e.Source as Visual)?.FindAncestorOfType<DataGridRow>();
+
+        if (row?.DataContext is not PackageModel package) return;
+        if (DataContext is not PackageViewModel vm) return;
+
+
+        vm.TogglePackageCheckCommand.Execute(package).Subscribe();
     }
 }

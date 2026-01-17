@@ -17,7 +17,6 @@ namespace Shelly_UI.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase, IScreen
 {
-    private PackageViewModel? _cachedPackages;
     private readonly IServiceProvider _services;
     private IAppCache _appCache;
 
@@ -163,11 +162,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             TurnOffMenuItems();
             return Router.Navigate.Execute(new HomeViewModel(this, appCache));
         });
-        GoPackages = ReactiveCommand.CreateFromObservable(() =>
-        {
-            _cachedPackages ??= new PackageViewModel(this, appCache);
-            return Router.Navigate.Execute(_cachedPackages);
-        });
+        GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache)));
         GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this)));
         GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
@@ -177,6 +172,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoHome.Execute(Unit.Default);
     }
 
+    
+    
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen

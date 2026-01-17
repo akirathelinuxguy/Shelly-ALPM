@@ -88,7 +88,7 @@
         <value>This will install all selected packages.</value>
     </data>
     <data name="Sync" xml:space="preserve">
-        <value>Sync</value>
+        <value>Sync, updates all databases</value>
     </data>
     <data name="Refresh" xml:space="preserve">
         <value>Refresh</value>
