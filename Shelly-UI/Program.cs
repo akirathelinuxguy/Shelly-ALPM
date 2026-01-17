@@ -91,7 +91,7 @@ sealed class Program
         if (sessionType == "wayland")
         {
             // Force Wayland backend, no X11 fallback
-            return builder.With(new X11PlatformOptions { UseDBusFilePicker = false })
+            return builder
                 .UseSkia()
                 .With(new AvaloniaNativePlatformOptions())
                 .UsePlatformDetect(); // Will now prefer Wayland

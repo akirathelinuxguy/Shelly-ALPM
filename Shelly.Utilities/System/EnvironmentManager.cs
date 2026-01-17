@@ -13,7 +13,9 @@ public static class EnvironmentManager
         var sessionType = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE");
         if (sessionType == "wayland")
             return $"WAYLAND_DISPLAY={Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")} " +
-                   $"XDG_RUNTIME_DIR={Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR")}";
+                   $"XDG_RUNTIME_DIR={Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR")} " +
+                   $"XDG_SESSION_TYPE={sessionType} " +
+                   $"DISPLAY=null";
 
         return $"DISPLAY={Environment.GetEnvironmentVariable("DISPLAY")} " +
                $"XAUTHORITY={Environment.GetEnvironmentVariable("XAUTHORITY")}";
