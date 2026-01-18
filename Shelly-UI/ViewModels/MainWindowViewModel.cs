@@ -19,6 +19,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 {
     private readonly IServiceProvider _services;
     private IAppCache _appCache;
+    private readonly IPrivilegedOperationService _privilegedOperationService;
+    private readonly ICredentialManager _credentialManager;
 
     public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
         IServiceProvider services,
@@ -28,6 +30,46 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         scheduler ??= RxApp.MainThreadScheduler;
 
         _appCache = appCache;
+        _privilegedOperationService = services.GetRequiredService<IPrivilegedOperationService>();
+        _credentialManager = services.GetRequiredService<ICredentialManager>();
+        
+        // Subscribe to credential requests
+        _credentialManager.CredentialRequested += (sender, args) =>
+        {
+            // Use the scheduler to ensure we're on the UI thread
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                PasswordPromptReason = args.Reason;
+                PasswordInput = string.Empty;
+                PasswordErrorMessage = string.Empty;
+                ShowPasswordPrompt = true;
+            });
+        };
+        
+        // Command to submit password
+        SubmitPasswordCommand = ReactiveCommand.Create(() =>
+        {
+            if (!string.IsNullOrEmpty(PasswordInput))
+            {
+                _credentialManager.StorePassword(PasswordInput);
+                ShowPasswordPrompt = false;
+                PasswordInput = string.Empty;
+                _credentialManager.CompleteCredentialRequest(true);
+            }
+            else
+            {
+                PasswordErrorMessage = "Password cannot be empty.";
+            }
+        });
+        
+        // Command to cancel password prompt
+        CancelPasswordCommand = ReactiveCommand.Create(() =>
+        {
+            ShowPasswordPrompt = false;
+            PasswordInput = string.Empty;
+            PasswordErrorMessage = string.Empty;
+            _credentialManager.CompleteCredentialRequest(false);
+        });
 
         var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
             h => alpmManager.PackageOperation += h,
@@ -162,9 +204,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             TurnOffMenuItems();
             return Router.Navigate.Execute(new HomeViewModel(this, appCache));
         });
-        GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache)));
-        GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this)));
-        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
+        GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService)));
+        GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService)));
+        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this, _privilegedOperationService)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService,
                 _services.GetRequiredService<IUpdateService>(), appCache)));
@@ -239,6 +281,41 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     public ReactiveCommand<string, Unit> RespondToQuestion { get; }
+
+    #region Password Prompt
+    
+    private bool _showPasswordPrompt;
+    public bool ShowPasswordPrompt
+    {
+        get => _showPasswordPrompt;
+        set => this.RaiseAndSetIfChanged(ref _showPasswordPrompt, value);
+    }
+    
+    private string _passwordPromptReason = string.Empty;
+    public string PasswordPromptReason
+    {
+        get => _passwordPromptReason;
+        set => this.RaiseAndSetIfChanged(ref _passwordPromptReason, value);
+    }
+    
+    private string _passwordInput = string.Empty;
+    public string PasswordInput
+    {
+        get => _passwordInput;
+        set => this.RaiseAndSetIfChanged(ref _passwordInput, value);
+    }
+    
+    private string _passwordErrorMessage = string.Empty;
+    public string PasswordErrorMessage
+    {
+        get => _passwordErrorMessage;
+        set => this.RaiseAndSetIfChanged(ref _passwordErrorMessage, value);
+    }
+    
+    public ReactiveCommand<Unit, Unit> SubmitPasswordCommand { get; }
+    public ReactiveCommand<Unit, Unit> CancelPasswordCommand { get; }
+    
+    #endregion
 
     public void TogglePane()
     {

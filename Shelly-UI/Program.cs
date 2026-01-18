@@ -21,9 +21,7 @@ sealed class Program
     public static void Main(string[] args)
     {
         Console.WriteLine($"Running with user path {EnvironmentManager.UserPath}");
-        var logPath = Environment.GetEnvironmentVariable("PKEXEC_UID") != null
-            ? Path.Combine(Path.GetTempPath(), "shelly") // /tmp/shelly
-            : Path.Combine(EnvironmentManager.UserPath, "Documents", "Shelly");
+        var logPath = Path.Combine(EnvironmentManager.UserPath, "Documents", "Shelly");
         Directory.CreateDirectory(logPath);
         var logWriter = new LogTextWriter(Console.Error, logPath);
         Console.SetError(logWriter);
@@ -53,26 +51,7 @@ sealed class Program
             return;
         }
 
-        if (!UserIdentity.IsRoot())
-        {
-            var wmVars = EnvironmentManager.CreateWindowManagerVars();
-            var userPath = EnvironmentManager.UserPath;
-            Console.Error.WriteLine($"Running with user path {userPath}");
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "pkexec",
-                    Arguments =
-                        $"env {wmVars} {Process.GetCurrentProcess().MainModule?.FileName} {string.Join(" ", args)}",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            process.Start();
-            return;
-        }
-
+        // No longer requires root - privileged operations are handled via pkexec calls to Shelly-CLI
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }

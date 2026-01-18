@@ -22,6 +22,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;
+    private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
@@ -32,12 +33,13 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     private readonly ObservableAsPropertyHelper<string> _fullLogText;
     public string FullLogText => _fullLogText.Value;
     
-    public PackageViewModel(IScreen screen, IAppCache appCache)
+    public PackageViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
         AvaliablePackages = new ObservableCollection<PackageModel>();
         
         _appCache = appCache;
+        _privilegedOperationService = privilegedOperationService;
 
         var consoleEnabled = _configService.LoadConfig().ConsoleEnabled;
         
@@ -69,7 +71,13 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
-            await Task.Run(() => _alpmManager.IntializeWithSync());
+            var result = await _privilegedOperationService.SyncDatabasesAsync();
+            if (!result.Success)
+            {
+                Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
+            }
+            // Re-initialize the local alpm manager to pick up synced data
+            await Task.Run(() => _alpmManager.Initialize());
             // Clear cache and reload data by storing null
             await _appCache.StoreAsync<List<PackageModel>?>(nameof(CacheEnums.PackageCache), null);
             await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), _alpmManager.GetInstalledPackages());
@@ -158,7 +166,11 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         if (selectedPackages.Any())
         {
             ShowConfirmDialog = false;
-            await Task.Run(() => _alpmManager.InstallPackages(selectedPackages));
+            var result = await _privilegedOperationService.InstallPackagesAsync(selectedPackages);
+            if (!result.Success)
+            {
+                Console.WriteLine($"Failed to install packages: {result.Error}");
+            }
             await Sync();
         }
         else
