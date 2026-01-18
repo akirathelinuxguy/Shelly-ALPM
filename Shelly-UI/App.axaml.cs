@@ -31,6 +31,8 @@ public partial class App : Application
         collection.AddSingleton<IConfigService, ConfigService>();
         collection.AddSingleton<IAppCache, AppCache>();
         collection.AddSingleton<IUpdateService, GitHubUpdateService>();
+        collection.AddSingleton<ICredentialManager, CredentialManager>();
+        collection.AddSingleton<IPrivilegedOperationService, PrivilegedOperationService>();
         collection.AddSingleton<ThemeService>();
 
         // Creates a ServiceProvider containing services from the provided IServiceCollection

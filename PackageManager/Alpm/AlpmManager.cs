@@ -122,17 +122,18 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     {
                         string suffix = archSuffixMatch.Groups[1].Value;
                         AddArchitecture(_handle, resolvedArch + suffix);
-                        Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
-                        Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + suffix}");
+                        //Commented out logs because it's too much noise. Uncomment if needed
+                        //Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
+                        //Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + suffix}");
                     }
 
                     // Resolve $repo and $arch variables in the server URL
                     var resolvedServer = server
                         .Replace("$repo", repo.Name)
                         .Replace("$arch", resolvedArch);
-                    Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture {resolvedArch}");
+                    //Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture {resolvedArch}");
 
-                    Console.Error.WriteLine($"[DEBUG_LOG] Registering Server: {resolvedServer}");
+                    //Console.Error.WriteLine($"[DEBUG_LOG] Registering Server: {resolvedServer}");
                     DbAddServer(db, resolvedServer);
                 }
             }

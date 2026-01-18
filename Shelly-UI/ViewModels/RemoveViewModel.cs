@@ -16,12 +16,14 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;
+    private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
-    public RemoveViewModel(IScreen screen)
+    public RemoveViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
+        _privilegedOperationService = privilegedOperationService;
         AvailablePackages = new ObservableCollection<PackageModel>();
 
         _filteredPackages = this
@@ -114,8 +116,11 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
         if (selectedPackages.Any())
         {
             ShowConfirmDialog = false;
-            await Task.Run(() =>
-                _alpmManager.RemovePackages(selectedPackages, AlpmTransFlag.Cascade | AlpmTransFlag.Recurse));
+            var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages);
+            if (!result.Success)
+            {
+                Console.WriteLine($"Failed to remove packages: {result.Error}");
+            }
             await Refresh();
         }
         else

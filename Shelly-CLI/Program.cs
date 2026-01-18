@@ -1,0 +1,436 @@
+using PackageManager.Alpm;
+using Spectre.Console;
+using Spectre.Console.Cli;
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Shelly_CLI;
+
+public class Program
+{
+    public static int Main(string[] args)
+    {
+        var app = new CommandApp();
+        app.Configure(config =>
+        {
+            config.SetApplicationName("shelly-cli");
+            config.SetApplicationVersion("1.0.0");
+
+            config.AddCommand<SyncCommand>("sync")
+                .WithDescription("Synchronize package databases");
+
+            config.AddCommand<ListInstalledCommand>("list-installed")
+                .WithDescription("List all installed packages");
+
+            config.AddCommand<ListAvailableCommand>("list-available")
+                .WithDescription("List all available packages");
+
+            config.AddCommand<ListUpdatesCommand>("list-updates")
+                .WithDescription("List packages that need updates");
+
+            config.AddCommand<InstallCommand>("install")
+                .WithDescription("Install one or more packages");
+
+            config.AddCommand<RemoveCommand>("remove")
+                .WithDescription("Remove one or more packages");
+
+            config.AddCommand<UpdateCommand>("update")
+                .WithDescription("Update one or more packages");
+
+            config.AddCommand<UpgradeCommand>("upgrade")
+                .WithDescription("Perform a full system upgrade");
+        });
+
+        return app.Run(args);
+    }
+}
+
+public class SyncSettings : CommandSettings
+{
+    [CommandOption("-f|--force")]
+    [Description("Force synchronization even if databases are up to date")]
+    public bool Force { get; set; }
+}
+
+public class SyncCommand : Command<SyncSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] SyncSettings settings)
+    {
+        using var manager = new AlpmManager();
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing ALPM...", ctx =>
+            {
+                manager.Initialize();
+            });
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Synchronizing package databases...", ctx =>
+            {
+                manager.Sync(settings.Force);
+            });
+
+        AnsiConsole.MarkupLine("[green]Package databases synchronized successfully![/]");
+        return 0;
+    }
+}
+
+public class ListInstalledCommand : Command
+{
+    public override int Execute([NotNull] CommandContext context)
+    {
+        using var manager = new AlpmManager();
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing ALPM...", ctx =>
+            {
+                manager.Initialize();
+            });
+
+        var packages = manager.GetInstalledPackages();
+
+        var table = new Table();
+        table.AddColumn("Name");
+        table.AddColumn("Version");
+        table.AddColumn("Size");
+        table.AddColumn("Description");
+
+        foreach (var pkg in packages.OrderBy(p => p.Name))
+        {
+            table.AddRow(
+                pkg.Name,
+                pkg.Version,
+                FormatSize(pkg.Size),
+                pkg.Description.EscapeMarkup().Truncate(50)
+            );
+        }
+
+        AnsiConsole.Write(table);
+        AnsiConsole.MarkupLine($"[blue]Total: {packages.Count} packages[/]");
+        return 0;
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        string[] sizes = ["B", "KB", "MB", "GB"];
+        int order = 0;
+        double size = bytes;
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+        return $"{size:0.##} {sizes[order]}";
+    }
+}
+
+public class ListAvailableCommand : Command
+{
+    public override int Execute([NotNull] CommandContext context)
+    {
+        using var manager = new AlpmManager();
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing and syncing ALPM...", ctx =>
+            {
+                manager.IntializeWithSync();
+            });
+
+        var packages = manager.GetAvailablePackages();
+
+        var table = new Table();
+        table.AddColumn("Name");
+        table.AddColumn("Version");
+        table.AddColumn("Repository");
+        table.AddColumn("Description");
+
+        foreach (var pkg in packages.OrderBy(p => p.Name).Take(100))
+        {
+            table.AddRow(
+                pkg.Name,
+                pkg.Version,
+                pkg.Repository,
+                pkg.Description.EscapeMarkup().Truncate(50)
+            );
+        }
+
+        AnsiConsole.Write(table);
+        AnsiConsole.MarkupLine($"[blue]Showing first 100 of {packages.Count} available packages[/]");
+        return 0;
+    }
+}
+
+public class ListUpdatesCommand : Command
+{
+    public override int Execute([NotNull] CommandContext context)
+    {
+        using var manager = new AlpmManager();
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing and syncing ALPM...", ctx =>
+            {
+                manager.IntializeWithSync();
+            });
+
+        var updates = manager.GetPackagesNeedingUpdate();
+
+        if (updates.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[green]All packages are up to date![/]");
+            return 0;
+        }
+
+        var table = new Table();
+        table.AddColumn("Name");
+        table.AddColumn("Current Version");
+        table.AddColumn("New Version");
+        table.AddColumn("Download Size");
+
+        foreach (var pkg in updates.OrderBy(p => p.Name))
+        {
+            table.AddRow(
+                pkg.Name,
+                pkg.CurrentVersion,
+                pkg.NewVersion,
+                FormatSize(pkg.DownloadSize)
+            );
+        }
+
+        AnsiConsole.Write(table);
+        AnsiConsole.MarkupLine($"[yellow]{updates.Count} packages can be updated[/]");
+        return 0;
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        string[] sizes = ["B", "KB", "MB", "GB"];
+        int order = 0;
+        double size = bytes;
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+        return $"{size:0.##} {sizes[order]}";
+    }
+}
+
+public class PackageSettings : CommandSettings
+{
+    [CommandArgument(0, "<packages>")]
+    [Description("Package name(s) to operate on")]
+    public string[] Packages { get; set; } = [];
+
+    [CommandOption("--no-confirm")]
+    [Description("Skip confirmation prompt")]
+    public bool NoConfirm { get; set; }
+}
+
+public class InstallCommand : Command<PackageSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
+            return 1;
+        }
+
+        var packageList = settings.Packages.ToList();
+
+        AnsiConsole.MarkupLine($"[yellow]Packages to install:[/] {string.Join(", ", packageList)}");
+
+        if (!settings.NoConfirm)
+        {
+            if (!AnsiConsole.Confirm("Do you want to proceed?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
+        }
+
+        using var manager = new AlpmManager();
+
+        manager.Progress += (sender, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+        };
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing and syncing ALPM...", ctx =>
+            {
+                manager.IntializeWithSync();
+            });
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Installing packages...", ctx =>
+            {
+                manager.InstallPackages(packageList);
+            });
+
+        AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
+        return 0;
+    }
+}
+
+public class RemoveCommand : Command<PackageSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
+            return 1;
+        }
+
+        var packageList = settings.Packages.ToList();
+
+        AnsiConsole.MarkupLine($"[yellow]Packages to remove:[/] {string.Join(", ", packageList)}");
+
+        if (!settings.NoConfirm)
+        {
+            if (!AnsiConsole.Confirm("Do you want to proceed?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
+        }
+
+        using var manager = new AlpmManager();
+
+        manager.Progress += (sender, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+        };
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing ALPM...", ctx =>
+            {
+                manager.Initialize();
+            });
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Removing packages...", ctx =>
+            {
+                manager.RemovePackages(packageList);
+            });
+
+        AnsiConsole.MarkupLine("[green]Packages removed successfully![/]");
+        return 0;
+    }
+}
+
+public class UpdateCommand : Command<PackageSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
+            return 1;
+        }
+
+        var packageList = settings.Packages.ToList();
+
+        AnsiConsole.MarkupLine($"[yellow]Packages to update:[/] {string.Join(", ", packageList)}");
+
+        if (!settings.NoConfirm)
+        {
+            if (!AnsiConsole.Confirm("Do you want to proceed?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
+        }
+
+        using var manager = new AlpmManager();
+
+        manager.Progress += (sender, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+        };
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing and syncing ALPM...", ctx =>
+            {
+                manager.IntializeWithSync();
+            });
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Updating packages...", ctx =>
+            {
+                manager.UpdatePackages(packageList);
+            });
+
+        AnsiConsole.MarkupLine("[green]Packages updated successfully![/]");
+        return 0;
+    }
+}
+
+public class UpgradeSettings : CommandSettings
+{
+    [CommandOption("--no-confirm")]
+    [Description("Skip confirmation prompt")]
+    public bool NoConfirm { get; set; }
+}
+
+public class UpgradeCommand : Command<UpgradeSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] UpgradeSettings settings)
+    {
+        AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
+
+        if (!settings.NoConfirm)
+        {
+            if (!AnsiConsole.Confirm("Do you want to proceed with system upgrade?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
+        }
+
+        using var manager = new AlpmManager();
+
+        manager.Progress += (sender, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+        };
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Initializing and syncing ALPM...", ctx =>
+            {
+                manager.IntializeWithSync();
+            });
+
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("Upgrading system...", ctx =>
+            {
+                manager.SyncSystemUpdate();
+            });
+
+        AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
+        return 0;
+    }
+}
+
+public static class StringExtensions
+{
+    public static string Truncate(this string value, int maxLength)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+        return value.Length <= maxLength ? value : value[..(maxLength - 3)] + "...";
+    }
+}

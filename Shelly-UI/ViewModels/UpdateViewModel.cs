@@ -16,12 +16,14 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;
+    private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<UpdateModel>> _filteredPackages;
 
-    public UpdateViewModel(IScreen screen)
+    public UpdateViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
+        _privilegedOperationService = privilegedOperationService;
         PackagesForUpdating = new ObservableCollection<UpdateModel>();
 
         _filteredPackages = this
@@ -41,7 +43,13 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
-            await Task.Run(() => _alpmManager.IntializeWithSync());
+            var result = await _privilegedOperationService.SyncDatabasesAsync();
+            if (!result.Success)
+            {
+                Console.WriteLine($"Failed to sync databases: {result.Error}");
+            }
+            // Re-initialize the local alpm manager to pick up synced data
+            await Task.Run(() => _alpmManager.Initialize());
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 PackagesForUpdating.Clear();
@@ -59,7 +67,11 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
         var selectedPackages = PackagesForUpdating.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            await Task.Run(() => _alpmManager.UpdatePackages(selectedPackages));
+            var result = await _privilegedOperationService.UpdatePackagesAsync(selectedPackages);
+            if (!result.Success)
+            {
+                Console.WriteLine($"Failed to update packages: {result.Error}");
+            }
             await Sync();
         }
     }
