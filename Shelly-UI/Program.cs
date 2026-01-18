@@ -50,8 +50,7 @@ sealed class Program
             Console.Error.WriteLine("Shelly-UI is exclusively for Arch Linux.");
             return;
         }
-
-        // No longer requires root - privileged operations are handled via pkexec calls to Shelly-CLI
+        
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }
