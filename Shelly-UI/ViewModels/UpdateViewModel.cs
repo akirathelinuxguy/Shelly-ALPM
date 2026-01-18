@@ -8,12 +8,13 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
 using ReactiveUI;
+using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
 
 namespace Shelly_UI.ViewModels;
 
-public class UpdateViewModel : ViewModelBase, IRoutableViewModel
+public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;

@@ -32,7 +32,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         _appCache = appCache;
         _privilegedOperationService = services.GetRequiredService<IPrivilegedOperationService>();
         _credentialManager = services.GetRequiredService<ICredentialManager>();
-        
+
         // Subscribe to credential requests
         _credentialManager.CredentialRequested += (sender, args) =>
         {
@@ -45,7 +45,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                 ShowPasswordPrompt = true;
             });
         };
-        
+
         // Command to submit password
         SubmitPasswordCommand = ReactiveCommand.Create(() =>
         {
@@ -61,7 +61,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                 PasswordErrorMessage = "Password cannot be empty.";
             }
         });
-        
+
         // Command to cancel password prompt
         CancelPasswordCommand = ReactiveCommand.Create(() =>
         {
@@ -204,9 +204,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             TurnOffMenuItems();
             return Router.Navigate.Execute(new HomeViewModel(this, appCache));
         });
-        GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService)));
-        GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService)));
-        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this, appCache, _privilegedOperationService)));
+        GoPackages = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService)));
+        GoUpdate = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService)));
+        GoRemove = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new RemoveViewModel(this, appCache, _privilegedOperationService)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService,
                 _services.GetRequiredService<IUpdateService>(), appCache)));
@@ -214,8 +217,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoHome.Execute(Unit.Default);
     }
 
-    
-    
+
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen
@@ -283,38 +285,42 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     public ReactiveCommand<string, Unit> RespondToQuestion { get; }
 
     #region Password Prompt
-    
+
     private bool _showPasswordPrompt;
+
     public bool ShowPasswordPrompt
     {
         get => _showPasswordPrompt;
         set => this.RaiseAndSetIfChanged(ref _showPasswordPrompt, value);
     }
-    
+
     private string _passwordPromptReason = string.Empty;
+
     public string PasswordPromptReason
     {
         get => _passwordPromptReason;
         set => this.RaiseAndSetIfChanged(ref _passwordPromptReason, value);
     }
-    
+
     private string _passwordInput = string.Empty;
+
     public string PasswordInput
     {
         get => _passwordInput;
         set => this.RaiseAndSetIfChanged(ref _passwordInput, value);
     }
-    
+
     private string _passwordErrorMessage = string.Empty;
+
     public string PasswordErrorMessage
     {
         get => _passwordErrorMessage;
         set => this.RaiseAndSetIfChanged(ref _passwordErrorMessage, value);
     }
-    
+
     public ReactiveCommand<Unit, Unit> SubmitPasswordCommand { get; }
     public ReactiveCommand<Unit, Unit> CancelPasswordCommand { get; }
-    
+
     #endregion
 
     public void TogglePane()
@@ -480,9 +486,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     #endregion
-    
+
     #region MenuItemsToggle
-    
+
     //Revisit later but works now easily for one set of items, may be a lot to manage in the future.
 
     private void TurnOffMenuItems()
@@ -491,51 +497,61 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         IsUpdateActive = false;
         IsRemoveActive = false;
     }
-    
+
     private bool _isRemoveActive;
+
     public bool IsRemoveActive
     {
         get => _isRemoveActive;
-        set 
+        set
         {
-            if (value) 
+            if (value)
             {
                 IsInstallPackActive = false;
                 IsUpdateActive = false;
             }
+
             this.RaiseAndSetIfChanged(ref _isRemoveActive, value);
         }
     }
 
     private bool _isInstallPackActive;
+
     public bool IsInstallPackActive
     {
         get => _isInstallPackActive;
-        set 
+        set
         {
-            if (value) 
+            if (value)
             {
                 IsRemoveActive = false;
                 IsUpdateActive = false;
             }
+
             this.RaiseAndSetIfChanged(ref _isInstallPackActive, value);
         }
     }
 
     private bool _isUpdateActive;
+
     public bool IsUpdateActive
     {
         get => _isUpdateActive;
-        set 
+        set
         {
-            if (value) 
+            if (value)
             {
                 IsRemoveActive = false;
                 IsInstallPackActive = false;
             }
-            this.RaiseAndSetIfChanged(ref _isUpdateActive, value);
+
+            if (!IsUpdateActive)
+            {
+                this.RaiseAndSetIfChanged(ref _isUpdateActive, value);
+            }
         }
     }
+
     #endregion
 }
 
