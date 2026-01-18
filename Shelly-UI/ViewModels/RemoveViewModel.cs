@@ -7,8 +7,10 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
 using ReactiveUI;
+using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
+using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
@@ -17,12 +19,14 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;
     private readonly IPrivilegedOperationService _privilegedOperationService;
+    private readonly IAppCache _appCache;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
-    public RemoveViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService)
+    public RemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
+        _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         AvailablePackages = new ObservableCollection<PackageModel>();
 
@@ -43,6 +47,12 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
+            var result = await _privilegedOperationService.SyncDatabasesAsync();
+            if (!result.Success)
+            {
+                Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
+            }
+            // Re-initialize the local alpm manager to pick up synced data
             await Task.Run(() => _alpmManager.Initialize());
             RxApp.MainThreadScheduler.Schedule(() =>
             {
@@ -120,6 +130,11 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
             if (!result.Success)
             {
                 Console.WriteLine($"Failed to remove packages: {result.Error}");
+            }
+            else
+            {
+                // Update the installed packages cache after successful removal
+                await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), _alpmManager.GetInstalledPackages());
             }
             await Refresh();
         }

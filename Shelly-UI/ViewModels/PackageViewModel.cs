@@ -18,9 +18,10 @@ using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
-public class PackageViewModel : ViewModelBase, IRoutableViewModel
+public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableViewModel
 {
     public IScreen HostScreen { get; }
+    public ViewModelActivator Activator { get; } = new ViewModelActivator();
     private IAlpmManager _alpmManager = AlpmService.Instance;
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
@@ -43,6 +44,10 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
 
         var consoleEnabled = _configService.LoadConfig().ConsoleEnabled;
         
+        // Always initialize ConsoleLogService to ensure stderr interception is active
+        // This is needed even when console is disabled so that logs from CLI are captured
+        var _ = ConsoleLogService.Instance;
+        
         _filteredPackages = this
             .WhenAnyValue(x => x.SearchText, x => x.AvaliablePackages.Count, (s, c) => s)
             .Throttle(TimeSpan.FromMilliseconds(250))
@@ -62,9 +67,11 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         
         _isBottomPanelVisible = consoleEnabled;
 
-        // In a real app, you'd likely resolve this via DI
-        
-        LoadData();
+        // Load data when the view model is activated (navigated to)
+        this.WhenActivated((System.Reactive.Disposables.CompositeDisposable disposables) =>
+        {
+            LoadData();
+        });
     }
 
     private async Task Sync()
@@ -122,6 +129,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
 
             RxApp.MainThreadScheduler.Schedule(() =>
             {
+                AvaliablePackages.Clear();
                 foreach (var model in models)
                 {
                     AvaliablePackages.Add(model);

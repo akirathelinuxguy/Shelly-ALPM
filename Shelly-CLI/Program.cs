@@ -3,13 +3,53 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Text;
 
 namespace Shelly_CLI;
+
+public class DualOutputWriter : TextWriter
+{
+    private readonly TextWriter _primary;
+    private const string ShellyCLIPrefix = "[Shelly-CLI]";
+    
+    public DualOutputWriter(TextWriter primary)
+    {
+        _primary = primary;
+    }
+    
+    public override void WriteLine(string? value)
+    {
+        _primary.WriteLine(value);
+        // Also write to stderr with prefix for UI capture
+        Console.Error.WriteLine($"{ShellyCLIPrefix}{value}");
+    }
+    
+    public override void Write(string? value)
+    {
+        _primary.Write(value);
+    }
+    
+    public override void Write(char value)
+    {
+        _primary.Write(value);
+    }
+    
+    public override Encoding Encoding => _primary.Encoding;
+}
 
 public class Program
 {
     public static int Main(string[] args)
     {
+        // Configure AnsiConsole to use DualOutputWriter for UI integration
+        var dualWriter = new DualOutputWriter(Console.Out);
+        Console.SetOut(dualWriter);
+        AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+        {
+            Out = new AnsiConsoleOutput(dualWriter)
+        });
+        
         var app = new CommandApp();
         app.Configure(config =>
         {
@@ -266,7 +306,7 @@ public class InstallCommand : Command<PackageSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
@@ -332,7 +372,7 @@ public class RemoveCommand : Command<PackageSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
@@ -398,7 +438,7 @@ public class UpdateCommand : Command<PackageSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
@@ -463,7 +503,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;

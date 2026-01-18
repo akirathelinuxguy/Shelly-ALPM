@@ -206,7 +206,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         });
         GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService)));
         GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService)));
-        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this, _privilegedOperationService)));
+        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this, appCache, _privilegedOperationService)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService,
                 _services.GetRequiredService<IUpdateService>(), appCache)));

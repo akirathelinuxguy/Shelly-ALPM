@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reactive.Concurrency;
 using System.Text;
+using System.Text.RegularExpressions;
 using ReactiveUI;
 
 namespace Shelly_UI.Services;
@@ -16,6 +18,11 @@ public class ConsoleLogService : TextWriter
     private readonly TextWriter _originalError;
     private StringBuilder _lineBuffer = new();
     public ObservableCollection<string> Logs { get; } = new();
+    
+    private readonly Dictionary<string, int> _packageProgress = new();
+    
+    // Matches patterns like "Downloading packageName... (50%)" or "Processing packageName... (75%)"
+    private static readonly Regex PercentagePattern = new(@"^(?:Progress|Processing)\s+(.+?)\.\.\.\s+\((\d+)%\)$", RegexOptions.Compiled);
 
     private ConsoleLogService()
     {
@@ -25,15 +32,32 @@ public class ConsoleLogService : TextWriter
         Console.SetError(this);
     }
 
+    private const string ShellyCLIPrefix = "[Shelly-CLI]";
+    
     public override void WriteLine(string? value)
     {
         if (value != null)
         {
-            RxApp.MainThreadScheduler.Schedule(() =>
+            // Only process logs that start with [Shelly-CLI] prefix
+            if (value.StartsWith(ShellyCLIPrefix))
             {
-                Logs.Add($"[{DateTime.Now:HH:mm:ss}] {value}");
-                if (Logs.Count > 500) Logs.RemoveAt(0);
-            });
+                // Remove the prefix for display
+                var logMessage = value.Substring(ShellyCLIPrefix.Length);
+                
+                // Check if the message contains a percentage pattern and update package progress
+                var match = PercentagePattern.Match(logMessage);
+                if (match.Success)
+                {
+                    var packageName = match.Groups[1].Value;
+                    if (int.TryParse(match.Groups[2].Value, out var percent))
+                    {
+                        UpdatePackageProgress(packageName, percent);
+                        return; // UpdatePackageProgress will call WriteLine with the progress change message
+                    }
+                }
+                
+                AddLog(logMessage);
+            }
         }
         _originalError.WriteLine(value);
     }
@@ -46,4 +70,40 @@ public class ConsoleLogService : TextWriter
     }
 
     public override Encoding Encoding => Encoding.UTF8;
+    
+    private void AddLog(string message)
+    {
+        RxApp.MainThreadScheduler.Schedule(() =>
+        {
+            Logs.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
+            if (Logs.Count > 500) Logs.RemoveAt(0);
+        });
+    }
+    
+    public void UpdatePackageProgress(string? packageName, int? percent)
+    {
+        if (string.IsNullOrEmpty(packageName) || !percent.HasValue)
+            return;
+            
+        var currentPercent = percent.Value;
+        
+        if (_packageProgress.TryGetValue(packageName, out var previousPercent))
+        {
+            if (currentPercent != previousPercent)
+            {
+                _packageProgress[packageName] = currentPercent;
+                AddLog($"{packageName}: {previousPercent}% -> {currentPercent}%");
+            }
+        }
+        else
+        {
+            _packageProgress[packageName] = currentPercent;
+            AddLog($"{packageName}: 0% -> {currentPercent}%");
+        }
+    }
+    
+    public void ClearPackageProgress()
+    {
+        _packageProgress.Clear();
+    }
 }

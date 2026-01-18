@@ -156,11 +156,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 // Filter out the password prompt from sudo
                 if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
                 {
-                    // Check for ALPM question
-                    if (e.Data.StartsWith("[ALPM_QUESTION]"))
+                    // Check for ALPM question (with Shelly-CLI prefix)
+                    if (e.Data.StartsWith("[Shelly-CLI][ALPM_QUESTION]"))
                     {
-                        var questionText = e.Data.Substring("[ALPM_QUESTION]".Length);
-                        Console.Error.WriteLine($"Question received: {questionText}");
+                        var questionText = e.Data.Substring("[Shelly-CLI][ALPM_QUESTION]".Length);
+                        Console.Error.WriteLine($"[Shelly-CLI]Question received: {questionText}");
                         
                         // Show dialog on UI thread and get response
                         var response = await Dispatcher.UIThread.InvokeAsync(async () =>
