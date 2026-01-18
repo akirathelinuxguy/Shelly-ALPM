@@ -10,6 +10,16 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <Version>1.2.0</Version>
+        <AssemblyVersion>1.2.0</AssemblyVersion>
+        <AssemblyTitle>Shelly CLI</AssemblyTitle>
+        <Description>Shelly CLI is a arch linux package manager</Description>
+        <Company>ZC Development</Company>
+        <Product>Shelly CLI by ZC Development</Product>
+        <Copyright>2026 ZC Development</Copyright>
+    </PropertyGroup>
+    
     <ItemGroup>
         <PackageReference Include="Spectre.Console" Version="0.49.1" />
         <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />

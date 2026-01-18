@@ -24,11 +24,20 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y clang zlib1g-dev libalpm-dev libx11-dev libice-dev libsm-dev libfontconfig1-dev libfreetype6-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxrandr-dev libxrender-dev libxtst-dev libgl1-mesa-dev libgles2-mesa-dev libgtk-3-dev zip
 
+    - name: Publish Shelly-CLI
+      run: |
+        dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o publish/shelly-cli
+        cd publish/shelly-cli
+        rm -f *.dbg
+        tar -czf ../Shelly-CLI-linux-x64.tar.gz .
+        cd ../..
+
     - name: Publish Shelly-UI
       run: |
         dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
         cp install.sh publish/shelly-ui/
         cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
+        cp publish/shelly-cli/Shelly-CLI publish/shelly-ui/
         cd publish/shelly-ui
         rm -f *.dbg
         tar -czf ../Shelly-ALPM-linux-x64.tar.gz .
@@ -39,6 +48,7 @@ jobs:
       with:
         files: |
           publish/Shelly-ALPM-linux-x64.tar.gz
+          publish/Shelly-CLI-linux-x64.tar.gz
         draft: false
         prerelease: false
       env:

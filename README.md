@@ -2,7 +2,6 @@
 
 ![Shelly Wiki](https://img.shields.io/badge/Shelly-Wiki-blue)
 
-
 Shelly is a modern, visual package manager for Arch Linux, built with .NET 10 and Avalonia. It provides a user-friendly
 interface for managing your Arch Linux system's packages by leveraging the power of `libalpm`.
 
@@ -63,11 +62,83 @@ shelly-ui
 
 *Note: Shelly will relaunch itself as root using pkexec if not already running as root.*
 
+## Shelly-CLI
+
+Shelly also includes a command-line interface (`shelly-cli`) for users who prefer terminal-based package management. The
+CLI provides the same core functionality as the UI but in a scriptable, terminal-friendly format.
+
+### CLI Commands
+
+| Command              | Description                     |
+|----------------------|---------------------------------|
+| `sync`               | Synchronize package databases   |
+| `list-installed`     | List all installed packages     |
+| `list-available`     | List all available packages     |
+| `list-updates`       | List packages that need updates |
+| `install <packages>` | Install one or more packages    |
+| `remove <packages>`  | Remove one or more packages     |
+| `update <packages>`  | Update one or more packages     |
+| `upgrade`            | Perform a full system upgrade   |
+
+### CLI Options
+
+**Global options:**
+
+- `--help` - Display help information
+- `--version` - Display version information
+
+**sync command:**
+
+- `-f, --force` - Force synchronization even if databases are up to date
+
+**install, remove, update commands:**
+
+- `--no-confirm` - Skip confirmation prompt
+
+**upgrade command:**
+
+- `--no-confirm` - Skip confirmation prompt
+
+### CLI Examples
+
+```bash
+# Synchronize package databases
+shelly-cli sync
+
+# Force sync even if up to date
+shelly-cli sync --force
+
+# List all installed packages
+shelly-cli list-installed
+
+# List packages needing updates
+shelly-cli list-updates
+
+# Install packages
+shelly-cli install firefox vim
+
+# Install without confirmation
+shelly-cli install --no-confirm firefox
+
+# Remove packages
+shelly-cli remove firefox
+
+# Update specific packages
+shelly-cli update firefox vim
+
+# Perform full system upgrade
+shelly-cli upgrade
+
+# System upgrade without confirmation
+shelly-cli upgrade --no-confirm
+```
+
 ## Development
 
 Shelly is structured into several components:
 
 - **Shelly-UI**: The main Avalonia-based desktop application.
+- **Shelly-CLI**: Command-line interface for terminal-based package management.
 - **PackageManager**: The core logic library providing bindings and abstractions for `libalpm`.
 - **PackageManager.Tests**: Comprehensive tests for the package management logic.
 - **Shelly-UI.Tests**: Unit tests for the Avalonia UI components.

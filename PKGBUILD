@@ -20,13 +20,17 @@ prepare() {
 build() {
   cd "$srcdir/${pkgname}"
   dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o out
+  dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli
 }
 
 package() {
   cd "$srcdir/${pkgname}"
   
-  # Install binary
+  # Install Shelly-UI binary
   install -Dm755 out/Shelly-UI "$pkgdir/usr/bin/shelly-ui"
+  
+  # Install Shelly-CLI binary
+  install -Dm755 out-cli/Shelly-CLI "$pkgdir/usr/bin/shelly-cli"
   
   # Install desktop entry
   echo "[Desktop Entry]

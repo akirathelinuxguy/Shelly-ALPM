@@ -20,6 +20,13 @@ if [ -f "$INSTALL_DIR/Shelly-UI" ]; then
     chmod +x "$INSTALL_DIR/Shelly-UI"
 fi
 
+# Ensure the CLI binary is executable and accessible in PATH
+if [ -f "$INSTALL_DIR/Shelly-CLI" ]; then
+    chmod +x "$INSTALL_DIR/Shelly-CLI"
+    echo "Creating symlink for shelly-cli in /usr/local/bin"
+    ln -sf "$INSTALL_DIR/Shelly-CLI" /usr/local/bin/shelly-cli
+fi
+
 echo "Creating desktop entry"
 cat <<EOF > /usr/share/applications/shelly.desktop
 [Desktop Entry]
