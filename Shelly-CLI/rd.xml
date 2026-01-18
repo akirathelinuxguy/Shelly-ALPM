@@ -1,0 +1,17 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="Shelly-CLI" Dynamic="Required All">
+      <Type Name="Shelly_CLI.SyncSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.SyncCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.ListInstalledCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.ListAvailableCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.ListUpdatesCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.PackageSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.InstallCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.RemoveCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.UpdateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.UpgradeSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.UpgradeCommand" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>
