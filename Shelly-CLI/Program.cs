@@ -11,18 +11,20 @@ namespace Shelly_CLI;
 public class DualOutputWriter : TextWriter
 {
     private readonly TextWriter _primary;
+    private readonly TextWriter _stderr;
     private const string ShellyCLIPrefix = "[Shelly-CLI]";
     
-    public DualOutputWriter(TextWriter primary)
+    public DualOutputWriter(TextWriter primary, TextWriter stderr)
     {
         _primary = primary;
+        _stderr = stderr;
     }
     
     public override void WriteLine(string? value)
     {
         _primary.WriteLine(value);
         // Also write to stderr with prefix for UI capture
-        Console.Error.WriteLine($"{ShellyCLIPrefix}{value}");
+        _stderr.WriteLine($"{ShellyCLIPrefix}{value}");
     }
     
     public override void Write(string? value)
@@ -38,12 +40,44 @@ public class DualOutputWriter : TextWriter
     public override Encoding Encoding => _primary.Encoding;
 }
 
+public class StderrPrefixWriter : TextWriter
+{
+    private readonly TextWriter _stderr;
+    private const string ShellyCLIPrefix = "[Shelly-CLI]";
+    
+    public StderrPrefixWriter(TextWriter stderr)
+    {
+        _stderr = stderr;
+    }
+    
+    public override void WriteLine(string? value)
+    {
+        _stderr.WriteLine($"{ShellyCLIPrefix}{value}");
+    }
+    
+    public override void Write(string? value)
+    {
+        _stderr.Write(value);
+    }
+    
+    public override void Write(char value)
+    {
+        _stderr.Write(value);
+    }
+    
+    public override Encoding Encoding => _stderr.Encoding;
+}
+
 public class Program
 {
     public static int Main(string[] args)
     {
+        // Configure stderr to use prefix for UI integration
+        var stderrWriter = new StderrPrefixWriter(Console.Error);
+        Console.SetError(stderrWriter);
+        
         // Configure AnsiConsole to use DualOutputWriter for UI integration
-        var dualWriter = new DualOutputWriter(Console.Out);
+        var dualWriter = new DualOutputWriter(Console.Out, stderrWriter);
         Console.SetOut(dualWriter);
         AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
         {
