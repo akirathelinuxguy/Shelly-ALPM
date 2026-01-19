@@ -9,6 +9,7 @@
              xmlns:shellyUi="clr-namespace:Shelly_UI"
              xmlns:views="clr-namespace:Shelly_UI.Views"
              xmlns:converters="clr-namespace:Shelly_UI.Converters"
+             xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:PackageViewModel"
              x:Class="Shelly_UI.Views.PackageWindow">
@@ -26,14 +27,10 @@
     <UserControl.Resources>
         <converters:BottomPanelHeightConverter x:Key="BottomPanelHeightConverter" />
     </UserControl.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" MinHeight="200" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition
-                Height="{Binding IsBottomPanelCollapsed, Converter={StaticResource BottomPanelHeightConverter}}"/>
-        </Grid.RowDefinitions>
-        <Border Grid.Row="0" Background="Transparent">
+    <customControls:ConsoleSplitControl
+        IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
+        IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
+        <customControls:ConsoleSplitControl.MainContent>
             <Grid Background="{DynamicResource SystemChromeLowColor}">
                 <Grid RowDefinitions="Auto,*">
                     <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
@@ -207,41 +204,17 @@
                     </Button>
                 </Border>
             </Grid>
-        </Border>
-        <GridSplitter Grid.Row="1" Height="5" Background="{DynamicResource SystemAccentColor}"
-                      CornerRadius="8,8,0,0"
-                      IsVisible="{Binding !IsBottomPanelCollapsed}"
-                      ResizeDirection="Rows" />
-        <Border Grid.Row="2" Background="Transparent">
-            <Grid>
-                <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
-                    <ScrollViewer>
-                        <TextBox Text="{Binding FullLogText, Mode=OneWay}"
-                                 IsReadOnly="True"
-                                 AcceptsReturn="True"
-                                 FontFamily="Consolas"
-                                 FontSize="12"
-                                 BorderThickness="0"
-                                 TextWrapping="NoWrap"
-                                 Background="Transparent"/>
-                    </ScrollViewer>
-                </Grid>
-                <Border Height="10" VerticalAlignment="Top" Background="{DynamicResource SystemAccentColor}"
-                        IsVisible="{Binding IsBottomPanelCollapsed}" CornerRadius="8,8,0,0" />
+        </customControls:ConsoleSplitControl.MainContent>
+        <customControls:ConsoleSplitControl.BottomContent>
+            
+            <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
+                <ScrollViewer>
+                <customControls:RichConsoleControl Logs="{Binding Logs}" />
+                </ScrollViewer>
             </Grid>
-        </Border>
-        <Button Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Top"
-                Padding="0" Margin="0,-12,10,0" Height="24" Width="24"
-                Background="{DynamicResource SystemAccentColor}"
-                Command="{Binding ToggleBottomPanel}"
-                IsVisible="{Binding IsBottomPanelVisible}"
-                ZIndex="10">
-            <Panel>
-                <avalonia:MaterialIcon Kind="ChevronDown" Height="20" Width="20"
-                                       IsVisible="{Binding !IsBottomPanelCollapsed}" />
-                <avalonia:MaterialIcon Kind="ChevronUp" Height="20" Width="20"
-                                       IsVisible="{Binding IsBottomPanelCollapsed}" />
-            </Panel>
-        </Button>
-    </Grid>
+        </customControls:ConsoleSplitControl.BottomContent>
+
+    </customControls:ConsoleSplitControl>
+
+
 </UserControl>

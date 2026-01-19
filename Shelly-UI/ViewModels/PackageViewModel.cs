@@ -11,6 +11,7 @@ using DynamicData;
 using DynamicData.Binding;
 using PackageManager.Alpm;
 using ReactiveUI;
+using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
@@ -18,7 +19,7 @@ using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
-public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableViewModel
+public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IActivatableViewModel
 {
     public IScreen HostScreen { get; }
     public ViewModelActivator Activator { get; } = new ViewModelActivator();
@@ -30,9 +31,6 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableV
     private readonly ConfigService _configService = new();
     
     private IAppCache _appCache;
-
-    private readonly ObservableAsPropertyHelper<string> _fullLogText;
-    public string FullLogText => _fullLogText.Value;
     
     public PackageViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
     {
@@ -41,8 +39,6 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableV
         
         _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
-
-        var consoleEnabled = _configService.LoadConfig().ConsoleEnabled;
         
         // Always initialize ConsoleLogService to ensure stderr interception is active
         // This is needed even when console is disabled so that logs from CLI are captured
@@ -54,19 +50,11 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableV
             .ObserveOn(RxApp.MainThreadScheduler)
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
-
-        _fullLogText = consoleEnabled ? ConsoleLogService.Instance.Logs
-            .ToObservableChangeSet() 
-            .QueryWhenChanged(items => string.Join(Environment.NewLine, items))
-            .ObserveOn(RxApp.MainThreadScheduler)
-            .ToProperty(this, x => x.FullLogText) : null;
         
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
         
-        _isBottomPanelVisible = consoleEnabled;
-        //LoadData();
         // Load data when the view model is activated (navigated to)
         this.WhenActivated((System.Reactive.Disposables.CompositeDisposable disposables) =>
         {
@@ -189,25 +177,6 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableV
         package.IsChecked = !package.IsChecked;
 
         Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
-    }
-    
-    private bool _isBottomPanelCollapsed = true;
-    public bool IsBottomPanelCollapsed
-    {
-        get => _isBottomPanelCollapsed;
-        set => this.RaiseAndSetIfChanged(ref _isBottomPanelCollapsed, value);
-    }
-
-    private bool _isBottomPanelVisible = true;
-    public bool IsBottomPanelVisible
-    {
-        get => _isBottomPanelVisible;
-        set => this.RaiseAndSetIfChanged(ref _isBottomPanelVisible, value);
-    }
-    
-    public void ToggleBottomPanel()
-    {
-        IsBottomPanelCollapsed = !IsBottomPanelCollapsed;
     }
     
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }

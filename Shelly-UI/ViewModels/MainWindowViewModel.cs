@@ -79,7 +79,6 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             .ObserveOn(scheduler)
             .Subscribe(pattern =>
             {
-                //Console.WriteLine($@"Got here:" + pattern.EventArgs.EventType);
                 var args = pattern.EventArgs;
                 switch (args.EventType)
                 {
@@ -213,8 +212,6 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
         GoHome.Execute(Unit.Default);
     }
-
-    
     
     private bool _isPaneOpen = false;
 
@@ -537,18 +534,4 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         }
     }
     #endregion
-}
-
-public class MenuItemViewModel(
-    string label,
-    MaterialIconKind icon,
-    string toolTip,
-    ReactiveCommand<Unit, IRoutableViewModel> command)
-{
-    public string Label { get; } = label;
-    public MaterialIconKind Icon { get; } = icon;
-
-    public string ToolTip { get; } = toolTip;
-
-    public ReactiveCommand<Unit, IRoutableViewModel> Command { get; set; } = command;
 }
