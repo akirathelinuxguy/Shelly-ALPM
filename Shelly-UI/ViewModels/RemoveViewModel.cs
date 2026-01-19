@@ -8,6 +8,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
 using ReactiveUI;
+using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
@@ -15,7 +16,7 @@ using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
-public class RemoveViewModel : ViewModelBase, IRoutableViewModel
+public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;
