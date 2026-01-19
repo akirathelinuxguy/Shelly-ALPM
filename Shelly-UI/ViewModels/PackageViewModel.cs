@@ -66,7 +66,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableV
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
         
         _isBottomPanelVisible = consoleEnabled;
-
+        LoadData();
         // Load data when the view model is activated (navigated to)
         this.WhenActivated((System.Reactive.Disposables.CompositeDisposable disposables) =>
         {
@@ -108,7 +108,6 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableV
         {
             await Task.Run(() => _alpmManager.Initialize());
             var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
-
             var installed =  await Task.Run(() => _alpmManager.GetInstalledPackages());
             var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
 
