@@ -66,7 +66,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel, IActivatableV
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
         
         _isBottomPanelVisible = consoleEnabled;
-        LoadData();
+        //LoadData();
         // Load data when the view model is activated (navigated to)
         this.WhenActivated((System.Reactive.Disposables.CompositeDisposable disposables) =>
         {

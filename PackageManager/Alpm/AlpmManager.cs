@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -10,6 +11,8 @@ using static PackageManager.Alpm.AlpmReference;
 
 namespace PackageManager.Alpm;
 
+[SuppressMessage("ReSharper", "SuggestVarOrType_BuiltInTypes",
+    Justification = "This class should be extra clear on the type definitions of the variables.")]
 public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, IAlpmManager
 {
     private string _configPath = configPath;
@@ -27,11 +30,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
     public void IntializeWithSync()
     {
-        Initialize();
+        Initialize(true);
         Sync();
     }
 
-    public void Initialize()
+    public void Initialize(bool root = false)
     {
         if (_handle != IntPtr.Zero)
         {
@@ -61,10 +64,59 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             throw new Exception($"Error initializing alpm library: {error}");
         }
 
+        if (!string.IsNullOrEmpty(_config.GpgDir) && root)
+        {
+            SetGpgDir(_handle, _config.GpgDir);
+        }
+
+        if (_config.SigLevel != AlpmSigLevel.None)
+        {
+            AlpmSigLevel sigLevel;
+            AlpmSigLevel localSigLevel;
+            if (!root)
+            {
+                sigLevel = AlpmSigLevel.PackageOptional | AlpmSigLevel.PackageUnknownOk |
+                           AlpmSigLevel.DatabaseOptional | AlpmSigLevel.DatabaseUnknownOk;
+                localSigLevel = sigLevel;
+            }
+            else
+            {
+                sigLevel = _config.SigLevel;
+                localSigLevel = _config.LocalFileSigLevel;
+            }
+
+            if (SetDefaultSigLevel(_handle, sigLevel) != 0)
+            {
+                Console.Error.WriteLine("[ALPM_ERROR] Failed to set default signature level");
+            }
+
+            if (SetLocalFileSigLevel(_handle, localSigLevel) != 0)
+            {
+                Console.Error.WriteLine("[ALPM_ERROR] Failed to set local file signature level");
+            }
+        }
+
+        AlpmSigLevel remoteSigLevel;
+        if (!root)
+        {
+            remoteSigLevel = AlpmSigLevel.PackageOptional | AlpmSigLevel.PackageUnknownOk |
+                             AlpmSigLevel.DatabaseOptional | AlpmSigLevel.DatabaseUnknownOk;
+        }
+        else
+        {
+            remoteSigLevel = _config.RemoteFileSigLevel;
+        }
+
+        if (SetRemoteFileSigLevel(_handle, remoteSigLevel) != 0)
+        {
+            Console.Error.WriteLine("[ALPM_ERROR] Failed to set remote file signature level");
+        }
+
         if (!string.IsNullOrEmpty(_config.CacheDir))
         {
             AddCacheDir(_handle, _config.CacheDir);
         }
+
 
         //Resolve 'auto' architecture to the actual system architecture
         string resolvedArch = _config.Architecture;
@@ -109,33 +161,44 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             Console.Error.WriteLine("[ALPM_ERROR] Failed to set progress callback");
         }
 
+
         foreach (var repo in _config.Repos)
         {
-            IntPtr db = RegisterSyncDb(_handle, repo.Name, AlpmSigLevel.None);
-            if (db != IntPtr.Zero)
+            var effectiveSigLevel = repo.SigLevel is AlpmSigLevel.None or AlpmSigLevel.UseDefault
+                ? (root
+                    ? _config.SigLevel
+                    : AlpmSigLevel.PackageOptional | AlpmSigLevel.PackageUnknownOk |
+                      AlpmSigLevel.DatabaseOptional | AlpmSigLevel.DatabaseUnknownOk)
+                : repo.SigLevel;
+            Console.Error.WriteLine($"[DEBUG] Registering {repo.Name} with SigLevel: {effectiveSigLevel}");
+            IntPtr db = RegisterSyncDb(_handle, repo.Name, effectiveSigLevel);
+            if (db == IntPtr.Zero)
             {
-                SetDefaultSigLevel(_handle, AlpmSigLevel.None);
-                foreach (var server in repo.Servers)
+                var errno = ErrorNumber(_handle);
+                Console.Error.WriteLine($"[ALPM_ERROR] Failed to register {repo.Name}: {errno}");
+                continue;
+            }
+
+            foreach (var server in repo.Servers)
+            {
+                var archSuffixMatch = Regex.Match(server, @"\$arch([^/]+)");
+                if (archSuffixMatch.Success)
                 {
-                    var archSuffixMatch = Regex.Match(server, @"\$arch([^/]+)");
-                    if (archSuffixMatch.Success)
-                    {
-                        string suffix = archSuffixMatch.Groups[1].Value;
-                        AddArchitecture(_handle, resolvedArch + suffix);
-                        //Commented out logs because it's too much noise. Uncomment if needed
-                        //Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
-                        //Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + suffix}");
-                    }
-
-                    // Resolve $repo and $arch variables in the server URL
-                    var resolvedServer = server
-                        .Replace("$repo", repo.Name)
-                        .Replace("$arch", resolvedArch);
-                    //Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture {resolvedArch}");
-
-                    //Console.Error.WriteLine($"[DEBUG_LOG] Registering Server: {resolvedServer}");
-                    DbAddServer(db, resolvedServer);
+                    string suffix = archSuffixMatch.Groups[1].Value;
+                    AddArchitecture(_handle, resolvedArch + suffix);
+                    //Commented out logs because it's too much noise. Uncomment if needed
+                    //Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
+                    //Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + suffix}");
                 }
+
+                // Resolve $repo and $arch variables in the server URL
+                var resolvedServer = server
+                    .Replace("$repo", repo.Name)
+                    .Replace("$arch", resolvedArch);
+                //Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture {resolvedArch}");
+
+                //Console.Error.WriteLine($"[DEBUG_LOG] Registering Server: {resolvedServer}");
+                DbAddServer(db, resolvedServer);
             }
         }
     }
@@ -326,7 +389,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             try
             {
-                using var fs = new FileStream(localpath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+                using var fs = new FileStream(localpath, FileMode.Create, FileAccess.Write, FileShare.None);
                 using var stream = response.Content.ReadAsStream();
 
                 byte[] buffer = new byte[8192];
@@ -390,7 +453,21 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         if (syncDbsPtr != IntPtr.Zero)
         {
             // Pass the entire list pointer directly to alpm_db_update
-            Update(_handle, syncDbsPtr, force);
+            var result = Update(_handle, syncDbsPtr, force);
+            if (result < 0)
+            {
+                var error = ErrorNumber(_handle);
+                Console.Error.WriteLine($"Sync failed: {GetErrorMessage(error)}");
+            }
+            if (result > 0)
+            {
+                Console.Error.WriteLine($"Sync database up to date");
+            }
+
+            if (result == 0)
+            {
+                Console.Error.WriteLine($"Updating Sync database");
+            }
         }
     }
 
@@ -414,10 +491,18 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
             if (node.Data != IntPtr.Zero)
             {
+                //Might need to swap these values
+                if (DbGetValid(node.Data) != 0)
+                {
+                    var dbName = Marshal.PtrToStringUTF8(DbGetName(node.Data)) ?? "unknown";
+                    Console.Error.WriteLine($"[ALPM_WARNING] Database '{dbName}' is invalid, skipping");
+                    currentPtr = node.Next;
+                    continue;
+                }
                 var dbPkgCachePtr = DbGetPkgCache(node.Data);
                 packages.AddRange(AlpmPackage.FromList(dbPkgCachePtr).Select(p => p.ToDto()));
             }
-
+      
             currentPtr = node.Next;
         }
 
@@ -949,7 +1034,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     {
         // Early return for null pointer
         if (eventPtr == IntPtr.Zero) return;
-        
+
         // Additional safety check - if handle is disposed, don't process events
         if (_handle == IntPtr.Zero) return;
 
@@ -970,7 +1055,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             //Console.Error.WriteLine($"[ALPM_ERROR] Error reading event type: {ex.Message}");
             return;
         }
-        
+
         // Validate the type value is within expected range (1-37 for ALPM events)
         if (typeValue < 1 || typeValue > 37)
         {

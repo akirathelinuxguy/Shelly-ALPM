@@ -217,7 +217,7 @@ public class SyncCommand : Command<SyncSettings>
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing ALPM...", ctx =>
             {
-                manager.Initialize();
+                manager.Initialize(true);
             });
 
         AnsiConsole.Status()
@@ -242,7 +242,7 @@ public class ListInstalledCommand : Command
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing ALPM...", ctx =>
             {
-                manager.Initialize();
+                manager.Initialize(true);
             });
 
         var packages = manager.GetInstalledPackages();
@@ -503,7 +503,7 @@ public class RemoveCommand : Command<PackageSettings>
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing ALPM...", ctx =>
             {
-                manager.Initialize();
+                manager.Initialize(true);
             });
 
         AnsiConsole.Status()
