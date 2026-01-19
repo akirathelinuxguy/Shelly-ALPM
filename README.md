@@ -35,7 +35,7 @@ Upcoming features and development targets:
 ### Using PKGBUILD
 
 Since Shelly is designed for Arch Linux, you can build and install it using the provided `PKGBUILD`:
-
+There is currently an issue with the package build and I suggest you run the local-install.sh after building it manually.
 ```bash
 git clone https://github.com/ZoeyErinBauer/Shelly-ALPM.git
 cd Shelly-ALPM
@@ -48,7 +48,13 @@ You can also build the project manually using the .NET CLI:
 
 ```bash
 dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
+dotnet publish Shelly-CLI/Shelly-CLI.csroj -C Release -o publish/shelly-cli
 ```
+alternatively you can run
+```bash
+sudo ./local-install.sh
+```
+This will build and perform the functions of install.sh
 
 The binary will be located in the `/publish/shelly-ui/` directory.
 
