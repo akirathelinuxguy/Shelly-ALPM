@@ -48,7 +48,13 @@ You can also build the project manually using the .NET CLI:
 
 ```bash
 dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
+dotnet publish Shelly-CLI/Shelly-CLI.csroj -C Release -o publish/shelly-cli
 ```
+alternatively you can run
+```bash
+sudo ./local-install.sh
+```
+This will build and perform the functions of install.sh
 
 The binary will be located in the `/publish/shelly-ui/` directory.
 
