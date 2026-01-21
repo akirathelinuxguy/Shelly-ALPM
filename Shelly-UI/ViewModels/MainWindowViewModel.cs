@@ -63,9 +63,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             {
                 _credentialManager.StorePassword(PasswordInput);
                 PasswordErrorMessage = "Validating...";
-                
+
                 await _credentialManager.CompleteCredentialRequestAsync(true);
-                
+
                 if (_credentialManager.IsValidated)
                 {
                     ShowPasswordPrompt = false;
@@ -138,7 +138,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                     }
                 }
             });
-        
+
         packageOperationEvents
             .ObserveOn(scheduler)
             .Where(e => e.EventArgs.EventType != AlpmEventType.TransactionDone)
@@ -194,10 +194,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoUpdate = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService, _credentialManager)));
         GoRemove = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
+            Router.Navigate.Execute(
+                new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService,
-                _services.GetRequiredService<IUpdateService>(), appCache)));
+                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService)));
 
         GoHome.Execute(Unit.Default);
 

@@ -65,7 +65,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     public async Task<OperationResult> SyncDatabasesAsync()
     {
-        return await ExecutePrivilegedCommandAsync("Synchronize package databases", "sync", "--force");
+        return await ExecutePrivilegedCommandAsync("Synchronize package databases", "sync");
     }
 
     public async Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages)
@@ -89,6 +89,12 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> UpgradeSystemAsync()
     {
         return await ExecutePrivilegedCommandAsync("Upgrade system", "upgrade", "--no-confirm");
+    }
+
+    public async  Task<OperationResult> ForceSyncDatabaseAsync()
+    {
+        return await ExecutePrivilegedCommandAsync("Force synchronize package databases", "sync", "--force");
+        
     }
 
     private async Task<OperationResult> ExecutePrivilegedCommandAsync(string operationDescription, params string[] args)

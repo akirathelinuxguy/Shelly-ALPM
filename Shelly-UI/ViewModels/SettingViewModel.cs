@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reactive;
 using System.Threading.Tasks;
@@ -14,21 +15,22 @@ namespace Shelly_UI.ViewModels;
 
 public class SettingViewModel : ViewModelBase, IRoutableViewModel
 {
-    private string _selectedTheme;
-
     private readonly IConfigService _configService;
 
     private readonly IUpdateService _updateService;
 
+    private readonly IPrivilegedOperationService _privilegedOperationService;
+
     private IAppCache _appCache;
 
     public SettingViewModel(IScreen screen, IConfigService configService, IUpdateService updateService,
-        IAppCache appCache)
+        IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
         _configService = configService;
         _updateService = updateService;
         _appCache = appCache;
+        _privilegedOperationService = privilegedOperationService;
         var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
         if (fluentTheme != null && fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var dark) && dark is { } pal)
         {
@@ -41,13 +43,15 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
         _ = SetUpdateText();
 
+
         CheckForUpdatesCommand = ReactiveCommand.CreateFromTask(CheckForUpdates);
+        ForceSyncUpdateCommand = ReactiveCommand.CreateFromTask(ForceSyncUpdate);
     }
 
     private string _accentHex = "#018574";
 
     private bool _isDarkMode;
-    
+
     private bool _enableConsole;
 
     private bool _enableAur;
@@ -70,6 +74,11 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _configService.SaveConfig(config);
     }
 
+    private async Task ForceSyncUpdate()
+    {
+        await _privilegedOperationService.ForceSyncDatabaseAsync();
+    }
+
     public bool IsDarkMode
     {
         get => _isDarkMode;
@@ -83,7 +92,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             _configService.SaveConfig(config);
         }
     }
-    
+
     public bool EnableConsole
     {
         get => _enableConsole;
@@ -141,6 +150,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
     public ReactiveCommand<Unit, Unit> CheckForUpdatesCommand { get; }
+
+    public ReactiveCommand<Unit, Unit> ForceSyncUpdateCommand { get; }
 
     public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
                                         !AppContext.BaseDirectory.StartsWith("/usr/share/Shelly") ||
