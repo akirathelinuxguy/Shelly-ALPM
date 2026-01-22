@@ -146,7 +146,7 @@ public class Program
         app.Configure(config =>
         {
             config.SetApplicationName("shelly");
-            config.SetApplicationVersion("1.2.2");
+            config.SetApplicationVersion("1.2.4");
 
             config.AddCommand<SyncCommand>("sync")
                 .WithDescription("Synchronize package databases");
