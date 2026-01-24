@@ -23,25 +23,17 @@
         </Button>
         <TextBlock Text="{x:Static lang:Resources.Appearance}" FontSize="18" FontWeight="Bold" />
         <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14" Opacity="0.7" />
-        <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
-            <TextBox Grid.Column="0"
-                     Text="{Binding AccentHex, Mode=TwoWay}"
-                     Watermark="#018574"
-                     VerticalAlignment="Center" />
-            <Border Grid.Column="1"
-                    Width="40" Height="32"
-                    Margin="10,0,0,0"
-                    CornerRadius="4"
-                    BorderThickness="1"
-                    Background="{Binding AccentHex, Mode=TwoWay}" />
+        <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
+            <ColorPicker Grid.Column="0" Color="{Binding AccentHex, Mode=TwoWay}" />
+            <Button Grid.Column="1" Content="{x:Static lang:Resources.ApplyAccent}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="20,0"
+                    Padding="10,7"
+                    Command="{Binding ApplyCustomAccent}"
+                    Background="{DynamicResource SystemAccentColor}"
+                    Foreground="{DynamicResource SystemBaseHighColor}" />
         </Grid>
-        <Button Content="{x:Static lang:Resources.ApplyAccent}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Padding="0,10"
-                Command="{Binding ApplyCustomAccent}"
-                Background="{DynamicResource SystemAccentColor}"
-                Foreground="{DynamicResource SystemBaseHighColor}" />
         <ToggleSwitch Content="Toggle Dark/Light Mode"
                       IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
         <ToggleSwitch Content="Enable Console"
@@ -65,5 +57,16 @@
                 Padding="0,10"
                 Background="{DynamicResource SystemAccentColor}"
                 Foreground="{DynamicResource SystemBaseHighColor}" />
+        <Button
+            Padding="0"
+            Click="OpenUrlCrossPlatform"
+            Background="Transparent">
+            <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
+                <avalonia:MaterialIcon Kind="CoffeeToGo" Foreground="{DynamicResource SystemBaseHighColor}" Width="20"
+                                       Height="20" />
+                <TextBlock Grid.Column="1" Text="Buy me a coffee" Opacity=".7" Padding="10, 0"></TextBlock>
+            </Grid>
+        </Button>
+        <TextBlock Text="{Binding AppVersion}" Opacity=".7" />
     </StackPanel>
 </UserControl>

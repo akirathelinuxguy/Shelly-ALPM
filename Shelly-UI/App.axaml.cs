@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
@@ -44,7 +45,7 @@ public partial class App : Application
             var themeService = _services.GetRequiredService<ThemeService>();
             var cacheService = _services.GetRequiredService<IAppCache>();
             var config = configService.LoadConfig();
-            if (config.AccentColor != null) themeService.ApplyCustomAccent(config.AccentColor);
+            if (config.AccentColor != null) themeService.ApplyCustomAccent(Color.Parse(config.AccentColor));
             themeService.SetTheme(config.DarkMode);
             Assets.Resources.Culture = config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");
         

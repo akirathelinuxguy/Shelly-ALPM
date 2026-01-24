@@ -2,8 +2,10 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reactive;
+using System.Reflection;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using ReactiveUI;
@@ -34,7 +36,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
         if (fluentTheme != null && fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var dark) && dark is { } pal)
         {
-            _accentHex = pal.Accent.ToString();
+            _accentHex = pal.Accent;
         }
 
         var config = _configService.LoadConfig();
@@ -48,7 +50,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         ForceSyncUpdateCommand = ReactiveCommand.CreateFromTask(ForceSyncUpdate);
     }
 
-    private string _accentHex = "#018574";
+    private Color _accentHex;
 
     private bool _isDarkMode;
 
@@ -60,7 +62,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     private bool _enableSnapd;
 
-    public string AccentHex
+    public Color AccentHex
     {
         get => _accentHex;
         set => this.RaiseAndSetIfChanged(ref _accentHex, value);
@@ -70,7 +72,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     {
         new ThemeService().ApplyCustomAccent(AccentHex);
         var config = _configService.LoadConfig();
-        config.AccentColor = AccentHex;
+        config.AccentColor = AccentHex.ToString();
         _configService.SaveConfig(config);
     }
 
@@ -188,5 +190,14 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     {
         get => _updateAvailable;
         set => this.RaiseAndSetIfChanged(ref _updateAvailable, value);
+    }
+    
+    public string AppVersion { get; } = GetAppVersion();
+
+    private static string GetAppVersion()
+    {
+        var asm = Assembly.GetEntryAssembly() ?? typeof(SettingViewModel).Assembly;
+        var nameVer = asm.GetName().Version?.ToString();
+        return !string.IsNullOrWhiteSpace(nameVer) ? $"v{nameVer}" : "unknown";
     }
 }

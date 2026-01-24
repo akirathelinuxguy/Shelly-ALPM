@@ -1,3 +1,6 @@
+using System;
+using System.Diagnostics;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
@@ -11,5 +14,24 @@ public partial class SettingWindow : ReactiveUserControl<SettingViewModel>
     {
         this.WhenActivated(disposables => { });
         AvaloniaXamlLoader.Load(this);
+    }
+    
+    private void OpenUrlCrossPlatform(object? sender, RoutedEventArgs routedEventArgs)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "xdg-open",
+                Arguments = "https://buymeacoffee.com/zoeyerinba3",
+                CreateNoWindow = true,
+                UseShellExecute = false
+            };
+            Process.Start(psi);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to open URL: {ex.Message}");
+        }
     }
 }

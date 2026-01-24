@@ -8,26 +8,23 @@ namespace Shelly_UI.Services;
 
 public class ThemeService
 {
-    public void ApplyCustomAccent(string accentHex)
+    public void ApplyCustomAccent(Color accent)
     {
-        if (Color.TryParse(accentHex, out var newColor))
+        var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
+        if (fluentTheme != null)
         {
-            var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
-            if (fluentTheme != null)
+            if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var currentDark) &&
+                currentDark is { } darkPalette)
             {
-                if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var currentDark) &&
-                    currentDark is { } darkPalette)
-                {
-                    darkPalette.Accent = newColor;
-                    fluentTheme.Palettes[ThemeVariant.Dark] = darkPalette;
-                }
+                darkPalette.Accent = accent;
+                fluentTheme.Palettes[ThemeVariant.Dark] = darkPalette;
+            }
 
-                if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Light, out var currentLight) &&
-                    currentLight is { } lightPalette)
-                {
-                    lightPalette.Accent = newColor;
-                    fluentTheme.Palettes[ThemeVariant.Light] = lightPalette;
-                }
+            if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Light, out var currentLight) &&
+                currentLight is { } lightPalette)
+            {
+                lightPalette.Accent = accent;
+                fluentTheme.Palettes[ThemeVariant.Light] = lightPalette;
             }
         }
     }
