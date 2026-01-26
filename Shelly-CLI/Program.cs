@@ -197,6 +197,32 @@ public class Program
                     .WithDescription("Refresh keys from the keyserver");
             });
 
+            config.AddBranch("aur", aur =>
+            {
+                aur.SetDescription("Manage AUR packages");
+
+                aur.AddCommand<Aur.AurSearchCommand>("search")
+                    .WithDescription("Search for AUR packages");
+
+                aur.AddCommand<Aur.AurListInstalledCommand>("list")
+                    .WithDescription("List installed AUR packages");
+
+                aur.AddCommand<Aur.AurListUpdatesCommand>("list-updates")
+                    .WithDescription("List AUR packages that need updates");
+
+                aur.AddCommand<Aur.AurInstallCommand>("install")
+                    .WithDescription("Install AUR packages");
+
+                aur.AddCommand<Aur.AurUpdateCommand>("update")
+                    .WithDescription("Update specific AUR packages");
+
+                aur.AddCommand<Aur.AurUpgradeCommand>("upgrade")
+                    .WithDescription("Upgrade all AUR packages");
+
+                aur.AddCommand<Aur.AurRemoveCommand>("remove")
+                    .WithDescription("Remove AUR packages");
+            });
+
             config.AddBranch("flatpak", flatpak =>
             {
                 flatpak.SetDescription("Manage flatpak");
