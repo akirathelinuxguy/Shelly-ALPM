@@ -21,6 +21,26 @@
       <Type Name="Shelly_CLI.KeyringLsignCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.KeyringListCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.KeyringRefreshCommand" Dynamic="Required All" />
+      <!-- AUR commands -->
+      <Type Name="Shelly_CLI.Aur+AurSearchSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurSearchCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurListInstalledCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurListUpdatesCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurPackageSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurInstallCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurUpdateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurUpgradeCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurRemoveCommand" Dynamic="Required All" />
+      <!-- Flatpak commands -->
+      <Type Name="Shelly_CLI.Flatpak+FlathubSearchSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlathubSearchCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlatpakSetting" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlatpakInstallCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlatpakRemoveCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlatpakUpdateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlatpakListCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlatpakListUpdatesCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Flatpak+FlatpakUpgradeCommand" Dynamic="Required All" />
     </Assembly>
   </Application>
 </Directives>
