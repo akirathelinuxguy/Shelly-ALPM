@@ -12,7 +12,7 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-INSTALL_DIR="/usr/bin/Shelly"
+INSTALL_DIR="/opt/shelly"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_CONFIG="Release"
 
@@ -61,27 +61,34 @@ cp "$SCRIPT_DIR/publish/Shelly-CLI/shelly" "$INSTALL_DIR/shelly"
 echo "Copying logo..."
 cp "$SCRIPT_DIR/Shelly-UI/Assets/shellylogo.png" "$INSTALL_DIR/"
 
-# Ensure the UI binary is executable
+# Ensure the UI binary is executable and create symlink
 if [ -f "$INSTALL_DIR/Shelly-UI" ]; then
     chmod +x "$INSTALL_DIR/Shelly-UI"
     echo "Made Shelly-UI executable"
+    echo "Creating symlink for shelly-ui in /usr/bin"
+    ln -sf "$INSTALL_DIR/Shelly-UI" /usr/bin/shelly-ui
 fi
 
 # Ensure the CLI binary is executable and accessible in PATH
 if [ -f "$INSTALL_DIR/shelly" ]; then
     chmod +x "$INSTALL_DIR/shelly"
     echo "Made Shelly-CLI executable"
-    echo "Creating symlink for shelly in /usr/local/bin"
-    ln -sf "$INSTALL_DIR/shelly" /usr/local/bin/shelly
+    echo "Creating symlink for shelly in /usr/bin"
+    ln -sf "$INSTALL_DIR/shelly" /usr/bin/shelly
 fi
+
+# Install icon to standard location
+echo "Installing icon to standard location..."
+mkdir -p /usr/share/icons/hicolor/256x256/apps
+cp "$INSTALL_DIR/shellylogo.png" /usr/share/icons/hicolor/256x256/apps/shelly.png
 
 # Create desktop entry
 echo "Creating desktop entry"
 cat <<EOF > /usr/share/applications/shelly.desktop
 [Desktop Entry]
 Name=Shelly
-Exec=$INSTALL_DIR/Shelly-UI
-Icon=$INSTALL_DIR/shellylogo.png
+Exec=/usr/bin/shelly-ui
+Icon=shelly
 Type=Application
 Categories=System;Utility;
 Terminal=false
@@ -97,7 +104,7 @@ echo "Installation complete!"
 echo "=========================================="
 echo ""
 echo "You can now:"
-echo "  - Run the GUI: $INSTALL_DIR/Shelly-UI"
-echo "  - Run the CLI: shelly(or $INSTALL_DIR/Shelly)"
+echo "  - Run the GUI: shelly-ui (or $INSTALL_DIR/Shelly-UI)"
+echo "  - Run the CLI: shelly (or $INSTALL_DIR/shelly)"
 echo "  - Find Shelly in your application menu"
 echo ""
