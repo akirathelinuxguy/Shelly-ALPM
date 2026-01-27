@@ -427,7 +427,7 @@
                            HorizontalAlignment="Center" />
             </StackPanel>
         </Panel>
-        <Panel IsVisible="{Binding IsGlobalBusy}" Background="#CC000000">
+        <Panel IsVisible="{Binding IsGlobalBusy}" Background="#80000000">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
                 <TextBlock Text="{Binding GlobalProgressText}"
                            Foreground="White"
