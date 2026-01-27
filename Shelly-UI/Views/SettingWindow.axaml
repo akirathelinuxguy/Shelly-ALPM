@@ -10,7 +10,7 @@
              x:DataType="viewModels:SettingViewModel"
              x:CompileBindings="True"
              Background="{DynamicResource SystemChromeLowColor}">
-    <Grid RowDefinitions="Auto,Auto">
+    <Grid>
         <TabControl Grid.Row="0"
             Margin="0 16"
             TabStripPlacement="Top">
@@ -64,19 +64,19 @@
                 </StackPanel>
             </TabItem>
         </TabControl>
-        <StackPanel Grid.Row="1"  VerticalAlignment="Bottom" Margin="10">
+        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+            <TextBlock Text="{Binding AppVersion}" Opacity=".7" HorizontalAlignment="Right" Padding="10, 0"/>
             <Button
                 Padding="0"
                 Click="OpenUrlCrossPlatform"
                 Background="Transparent">
                 <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
-                    <avalonia:MaterialIcon Kind="CoffeeToGo" Foreground="{DynamicResource SystemBaseHighColor}"
+                    <avalonia:MaterialIcon Kind="CoffeeToGo" HorizontalAlignment="Right" Foreground="{DynamicResource SystemBaseHighColor}"
                                            Width="20"
                                            Height="20" />
                     <TextBlock Grid.Column="1" Text="Buy me a coffee" Opacity=".7" Padding="10, 0"></TextBlock>
                 </Grid>
             </Button>
-            <TextBlock Text="{Binding AppVersion}" Opacity=".7"/>
         </StackPanel>
     </Grid>
 </UserControl>
