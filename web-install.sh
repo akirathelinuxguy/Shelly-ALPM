@@ -11,7 +11,7 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-REPO="zoey-on-github/Shelly-ALPM"
+REPO="ZoeyErinBauer/Shelly-ALPM"
 ASSET_NAME="Shelly-ALPM-linux-x64.tar.gz"
 TMP_DIR=$(mktemp -d)
 

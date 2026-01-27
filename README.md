@@ -13,7 +13,7 @@ interacts with their Arch Linux system, providing a more streamlined and intuiti
 Install Shelly with a single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zoey-on-github/Shelly-ALPM/main/web-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
 ```
 
 This will download and install the latest release, including the UI and CLI tools.
