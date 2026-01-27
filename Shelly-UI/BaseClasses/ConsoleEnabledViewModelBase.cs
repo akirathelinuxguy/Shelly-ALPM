@@ -1,11 +1,14 @@
+using System;
+using System.Reactive.Disposables;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.ViewModels;
 
 namespace Shelly_UI.BaseClasses;
 
-public abstract class ConsoleEnabledViewModelBase : ViewModelBase
+public abstract class ConsoleEnabledViewModelBase : ReactiveObject
 {
     // Expose the collection directly for the custom control
     public System.Collections.ObjectModel.ObservableCollection<string> Logs => 
@@ -30,6 +33,20 @@ public abstract class ConsoleEnabledViewModelBase : ViewModelBase
     {
         var consoleEnabled =  App.Services.GetRequiredService<IConfigService>().LoadConfig().ConsoleEnabled;
         _isBottomPanelVisible = consoleEnabled;
+
+        MessageBus.Current.Listen<SettingsChangedMessage>()
+            .Subscribe(RefreshUi);
+    }
+
+    private void RefreshUi(SettingsChangedMessage msg)
+    {
+        if (!msg.ConsoleChanged) return;
+        if (IsBottomPanelCollapsed)
+        {
+            IsBottomPanelCollapsed = false;
+        }
+        ToggleBottomPanel();
+        IsBottomPanelVisible = !IsBottomPanelVisible;
     }
 
     public void ToggleBottomPanel()

@@ -88,6 +88,7 @@ Shelly-ALPM/
 │   ├── Converters/           # XAML value converters
 │   ├── CustomControls/       # Custom Avalonia controls
 │   ├── Enums/                # Enumeration types
+│   ├── Enums/                # Messages for UI Message bus
 │   ├── Models/               # UI-specific models
 │   ├── Services/             # Application services
 │   │   └── AppCache/         # Caching services

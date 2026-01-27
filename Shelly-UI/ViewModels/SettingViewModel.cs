@@ -10,6 +10,7 @@ using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using ReactiveUI;
 using Shelly_UI.Enums;
+using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 
@@ -102,10 +103,11 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             this.RaiseAndSetIfChanged(ref _enableConsole, value);
-
+            
             var config = _configService.LoadConfig();
             config.ConsoleEnabled = value;
             _configService.SaveConfig(config);
+            MessageBus.Current.SendMessage(new SettingsChangedMessage{ConsoleChanged = true});
         }
     }
 
@@ -115,7 +117,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             this.RaiseAndSetIfChanged(ref _enableSnapd, value);
-
+            
             var config = _configService.LoadConfig();
             config.SnapEnabled = value;
             _configService.SaveConfig(config);
@@ -141,7 +143,9 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             this.RaiseAndSetIfChanged(ref _enableAur, value);
-
+            
+            MessageBus.Current.SendMessage(new SettingsChangedMessage{AurChanged = true});
+            
             var config = _configService.LoadConfig();
             config.AurEnabled = value;
             _configService.SaveConfig(config);

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,13 +13,14 @@ using ReactiveUI;
 using Microsoft.Extensions.DependencyInjection;
 using PackageManager.Alpm;
 using Shelly_UI.Enums;
+using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
 
 namespace Shelly_UI.ViewModels;
 
-public class MainWindowViewModel : ViewModelBase, IScreen
+public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 {
     private readonly IServiceProvider _services;
     private IAppCache _appCache;
@@ -94,7 +97,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
             h => alpmManager.PackageOperation += h,
             h => alpmManager.PackageOperation -= h);
-        
+
 
         packageOperationEvents
             .ObserveOn(scheduler)
@@ -197,8 +200,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             Router.Navigate.Execute(
                 new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new SettingViewModel(this, configService,
-                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService)));
+        {
+            IsSettingsOpen = true;
+            return SettingRouter.Navigate.Execute(new SettingViewModel(this, configService,
+                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService));
+        });
         GoAur = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new AurViewModel(this, appCache, _privilegedOperationService,
                 _credentialManager)));
@@ -207,6 +213,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoAurRemove = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(
                 new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
+        CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
         GoHome.Execute(Unit.Default);
 
@@ -254,8 +261,23 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                     }
                 }
             });
+        
+        MessageBus.Current.Listen<SettingsChangedMessage>()
+            .Subscribe(RefreshUi)
+            .DisposeWith(Disposables);
     }
-    
+
+    private void RefreshUi(SettingsChangedMessage msg)
+    {
+        if (!msg.AurChanged) return;
+        
+        IsAurEnabled = !IsAurEnabled;
+        if (IsAurOpen)
+        {
+            IsAurOpen = false;
+        }
+        this.RaisePropertyChanged(nameof(IsAurEnabled));
+    }
 
     private bool _isGlobalBusy;
 
@@ -401,6 +423,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
     public RoutingState Router { get; } = new RoutingState();
 
+    public RoutingState SettingRouter { get; } = new RoutingState();
+
     #region ReactiveCommands
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoHome { get; set; } = null!;
@@ -416,8 +440,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAur { get; set; } = null!;
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAurRemove { get; set; } = null!;
-    
+
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAurUpdate { get; set; } = null!;
+
+    public ReactiveCommand<Unit, bool> CloseSettingsCommand { get; set; } = null!;
 
     #endregion
 
@@ -465,7 +491,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         }
     }
 
-    public bool IsAurEnabled => _configService.LoadConfig().AurEnabled;
+    public bool IsAurEnabled
+    {
+        get => _configService.LoadConfig().AurEnabled;
+        set => _configService.LoadConfig().AurEnabled = value;
+    }
 
     private bool _isSnapOpen;
 
@@ -567,6 +597,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     #endregion
 
     #region MenuItemsToggle
+
     private MenuOptions _activeMenu;
 
     public MenuOptions ActiveMenu
@@ -574,5 +605,21 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         get => _activeMenu;
         set => this.RaiseAndSetIfChanged(ref _activeMenu, value);
     }
+
     #endregion
+
+    private bool _isSettingsOpen;
+
+    public bool IsSettingsOpen
+    {
+        get => _isSettingsOpen;
+        set => this.RaiseAndSetIfChanged(ref _isSettingsOpen, value);
+    }
+    private readonly CompositeDisposable _disposables = new CompositeDisposable();
+    protected CompositeDisposable Disposables => _disposables;
+    
+    public void Dispose()
+    {
+        _disposables?.Dispose();
+    }
 }
