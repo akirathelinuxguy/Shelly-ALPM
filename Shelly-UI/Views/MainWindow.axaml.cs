@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
@@ -51,5 +52,23 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
         config.WindowState = state;
         
         configService.SaveConfig(config);
+    }
+    
+    private void OnBackdropPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.IsSettingsOpen = false;
+        }
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && DataContext is MainWindowViewModel vm)
+        {
+            vm.IsSettingsOpen = false;
+            e.Handled = true;
+        }
+        base.OnKeyDown(e);
     }
 }

@@ -94,7 +94,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
             h => alpmManager.PackageOperation += h,
             h => alpmManager.PackageOperation -= h);
-        
+
 
         packageOperationEvents
             .ObserveOn(scheduler)
@@ -197,8 +197,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             Router.Navigate.Execute(
                 new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new SettingViewModel(this, configService,
-                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService)));
+        {
+            IsSettingsOpen = true;
+            return SettingRouter.Navigate.Execute(new SettingViewModel(this, configService,
+                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService));
+        });
         GoAur = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new AurViewModel(this, appCache, _privilegedOperationService,
                 _credentialManager)));
@@ -207,6 +210,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoAurRemove = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(
                 new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
+        CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
         GoHome.Execute(Unit.Default);
 
@@ -255,7 +259,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                 }
             });
     }
-    
+
 
     private bool _isGlobalBusy;
 
@@ -401,6 +405,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
     public RoutingState Router { get; } = new RoutingState();
 
+    public RoutingState SettingRouter { get; } = new RoutingState();
+
     #region ReactiveCommands
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoHome { get; set; } = null!;
@@ -416,8 +422,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAur { get; set; } = null!;
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAurRemove { get; set; } = null!;
-    
+
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAurUpdate { get; set; } = null!;
+
+    public ReactiveCommand<Unit, bool> CloseSettingsCommand { get; set; } = null!;
 
     #endregion
 
@@ -567,6 +575,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     #endregion
 
     #region MenuItemsToggle
+
     private MenuOptions _activeMenu;
 
     public MenuOptions ActiveMenu
@@ -574,5 +583,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         get => _activeMenu;
         set => this.RaiseAndSetIfChanged(ref _activeMenu, value);
     }
+
     #endregion
+
+    private bool _isSettingsOpen;
+
+    public bool IsSettingsOpen
+    {
+        get => _isSettingsOpen;
+        set => this.RaiseAndSetIfChanged(ref _isSettingsOpen, value);
+    }
 }
