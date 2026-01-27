@@ -1,5 +1,8 @@
+using System;
+using System.Reactive.Disposables;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.ViewModels;
 
@@ -30,10 +33,30 @@ public abstract class ConsoleEnabledViewModelBase : ReactiveObject
     {
         var consoleEnabled =  App.Services.GetRequiredService<IConfigService>().LoadConfig().ConsoleEnabled;
         _isBottomPanelVisible = consoleEnabled;
+        
+        MessageBus.Current.Listen<SettingsChangedMessage>()
+            .Subscribe(RefreshUi)
+            .Dispose();
+    }
+
+    private void RefreshUi(SettingsChangedMessage msg)
+    {
+        if (!msg.ConsoleChanged) return;
+        
+        ToggleBottomPanel();
+        IsBottomPanelVisible = !IsBottomPanelVisible;
     }
 
     public void ToggleBottomPanel()
     {
         IsBottomPanelCollapsed = !IsBottomPanelCollapsed;
+    }
+    
+    private readonly CompositeDisposable _disposables = new CompositeDisposable();
+    protected CompositeDisposable Disposables => _disposables;
+    
+    public void Dispose()
+    {
+        _disposables?.Dispose();
     }
 }

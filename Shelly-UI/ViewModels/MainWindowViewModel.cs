@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,13 +13,14 @@ using ReactiveUI;
 using Microsoft.Extensions.DependencyInjection;
 using PackageManager.Alpm;
 using Shelly_UI.Enums;
+using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
 
 namespace Shelly_UI.ViewModels;
 
-public class MainWindowViewModel : ViewModelBase, IScreen
+public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 {
     private readonly IServiceProvider _services;
     private IAppCache _appCache;
@@ -258,8 +261,23 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                     }
                 }
             });
+        
+        MessageBus.Current.Listen<SettingsChangedMessage>()
+            .Subscribe(RefreshUi)
+            .DisposeWith(Disposables);
     }
 
+    private void RefreshUi(SettingsChangedMessage msg)
+    {
+        if (!msg.AurChanged) return;
+        
+        IsAurEnabled = !IsAurEnabled;
+        if (IsAurOpen)
+        {
+            IsAurOpen = false;
+        }
+        this.RaisePropertyChanged(nameof(IsAurEnabled));
+    }
 
     private bool _isGlobalBusy;
 
@@ -473,7 +491,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         }
     }
 
-    public bool IsAurEnabled => _configService.LoadConfig().AurEnabled;
+    public bool IsAurEnabled
+    {
+        get => _configService.LoadConfig().AurEnabled;
+        set => _configService.LoadConfig().AurEnabled = value;
+    }
 
     private bool _isSnapOpen;
 
@@ -592,5 +614,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     {
         get => _isSettingsOpen;
         set => this.RaiseAndSetIfChanged(ref _isSettingsOpen, value);
+    }
+    private readonly CompositeDisposable _disposables = new CompositeDisposable();
+    protected CompositeDisposable Disposables => _disposables;
+    
+    public void Dispose()
+    {
+        _disposables?.Dispose();
     }
 }

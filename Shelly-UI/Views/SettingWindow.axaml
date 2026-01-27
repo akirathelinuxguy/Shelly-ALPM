@@ -18,7 +18,7 @@
                 <StackPanel Orientation="Vertical" Spacing="8">
                     <ToggleSwitch Content="Enable Console"
                                   IsChecked="{Binding EnableConsole, Mode=TwoWay}" />
-                    <ToggleSwitch Content="Enable AUR (Beta) (Requires Restart of Shelly)"
+                    <ToggleSwitch Content="Enable AUR (Beta)"
                                   IsChecked="{Binding EnableAur, Mode=TwoWay}">
                     </ToggleSwitch>
                     <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"

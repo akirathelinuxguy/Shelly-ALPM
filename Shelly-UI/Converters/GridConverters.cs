@@ -18,7 +18,7 @@ public class BottomPanelHeightConverter : IValueConverter
             return new Avalonia.Controls.GridLength(0);
         }
         
-        return value is bool and true ? new Avalonia.Controls.GridLength(10) : new Avalonia.Controls.GridLength(150, Avalonia.Controls.GridUnitType.Pixel);
+        return value is true ? new Avalonia.Controls.GridLength(10) : new Avalonia.Controls.GridLength(150, Avalonia.Controls.GridUnitType.Pixel);
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
