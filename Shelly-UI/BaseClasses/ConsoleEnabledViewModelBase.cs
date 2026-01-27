@@ -33,16 +33,18 @@ public abstract class ConsoleEnabledViewModelBase : ReactiveObject
     {
         var consoleEnabled =  App.Services.GetRequiredService<IConfigService>().LoadConfig().ConsoleEnabled;
         _isBottomPanelVisible = consoleEnabled;
-        
+
         MessageBus.Current.Listen<SettingsChangedMessage>()
-            .Subscribe(RefreshUi)
-            .Dispose();
+            .Subscribe(RefreshUi);
     }
 
     private void RefreshUi(SettingsChangedMessage msg)
     {
         if (!msg.ConsoleChanged) return;
-        
+        if (IsBottomPanelCollapsed)
+        {
+            IsBottomPanelCollapsed = false;
+        }
         ToggleBottomPanel();
         IsBottomPanelVisible = !IsBottomPanelVisible;
     }
@@ -50,13 +52,5 @@ public abstract class ConsoleEnabledViewModelBase : ReactiveObject
     public void ToggleBottomPanel()
     {
         IsBottomPanelCollapsed = !IsBottomPanelCollapsed;
-    }
-    
-    private readonly CompositeDisposable _disposables = new CompositeDisposable();
-    protected CompositeDisposable Disposables => _disposables;
-    
-    public void Dispose()
-    {
-        _disposables?.Dispose();
     }
 }
