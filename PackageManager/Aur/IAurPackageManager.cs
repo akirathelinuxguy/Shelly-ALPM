@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PackageManager.Aur.Models;
 
 namespace PackageManager.Aur;
 
-public interface IAurPackageManager
+public interface IAurPackageManager : IDisposable
 {
     Task Initialize(bool root = false);
 

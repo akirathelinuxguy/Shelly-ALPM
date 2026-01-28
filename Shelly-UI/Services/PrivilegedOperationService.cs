@@ -112,7 +112,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update", packageArgs);
+        return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update", "--no-confirm", packageArgs);
     }
 
     private async Task<OperationResult> ExecutePrivilegedCommandAsync(string operationDescription, params string[] args)

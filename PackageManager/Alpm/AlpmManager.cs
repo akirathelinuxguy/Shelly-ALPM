@@ -866,9 +866,15 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 throw new Exception($"Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
         }
+        catch (Exception ex)
+        {
+            _ = PkgFree(pkgPtr);
+            throw new Exception($"Failed to initialize transaction: {ex.Message}");
+        }
         finally
         {
             TransRelease(_handle);
+            Refresh();
         }
     }
 
@@ -895,6 +901,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
 
         return string.Empty;
+    }
+
+    public void Refresh()
+    {
+        if (_handle != IntPtr.Zero)
+        {
+            Release(_handle);
+            _handle = IntPtr.Zero;
+        }
+        Initialize();
     }
 
     public void UpdatePackages(List<string> packageNames,

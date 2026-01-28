@@ -29,6 +29,8 @@
       <Type Name="Shelly_CLI.Aur+AurListUpdatesCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Aur+AurPackageSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Aur+AurInstallCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurInstallVersionSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Aur+AurInstallVersionCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Aur+AurUpdateCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Aur+AurUpgradeCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Aur+AurRemoveCommand" Dynamic="Required All" />

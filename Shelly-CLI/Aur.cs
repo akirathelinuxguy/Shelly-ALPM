@@ -20,6 +20,21 @@ public class Aur
         [CommandArgument(0, "<packages>")]
         [Description("Package name(s) to operate on (space-separated)")]
         public string[] Packages { get; set; } = [];
+
+        [CommandOption("--no-confirm")]
+        [Description("Skip confirmation prompts")]
+        public bool NoConfirm { get; set; }
+    }
+
+    public class AurInstallVersionSettings : CommandSettings
+    {
+        [CommandArgument(0, "<package>")]
+        [Description("Package name to install")]
+        public string Package { get; set; } = string.Empty;
+
+        [CommandArgument(1, "<commit>")]
+        [Description("Git commit hash for the specific version")]
+        public string Commit { get; set; } = string.Empty;
     }
 
     public class AurSearchCommand : Command<AurSearchSettings>
@@ -196,6 +211,59 @@ public class Aur
         }
     }
 
+    public class AurInstallVersionCommand : Command<AurInstallVersionSettings>
+    {
+        public override int Execute([NotNull] CommandContext context, [NotNull] AurInstallVersionSettings settings)
+        {
+            if (string.IsNullOrWhiteSpace(settings.Package))
+            {
+                AnsiConsole.MarkupLine("[red]No package specified.[/]");
+                return 1;
+            }
+
+            if (string.IsNullOrWhiteSpace(settings.Commit))
+            {
+                AnsiConsole.MarkupLine("[red]No commit specified.[/]");
+                return 1;
+            }
+
+            try
+            {
+                var manager = new AurPackageManager();
+                manager.Initialize(root: true).GetAwaiter().GetResult();
+
+                manager.PackageProgress += (sender, args) =>
+                {
+                    var statusColor = args.Status switch
+                    {
+                        PackageProgressStatus.Downloading => "yellow",
+                        PackageProgressStatus.Building => "blue",
+                        PackageProgressStatus.Installing => "cyan",
+                        PackageProgressStatus.Completed => "green",
+                        PackageProgressStatus.Failed => "red",
+                        _ => "white"
+                    };
+
+                    AnsiConsole.MarkupLine(
+                        $"[{statusColor}][[{args.CurrentIndex}/{args.TotalCount}]] {args.PackageName}: {args.Status}[/]" +
+                        (args.Message != null ? $" - {args.Message.EscapeMarkup()}" : ""));
+                };
+
+                AnsiConsole.MarkupLine(
+                    $"[yellow]Installing AUR package {settings.Package} at commit {settings.Commit}[/]");
+                manager.InstallPackageVersion(settings.Package, settings.Commit).GetAwaiter().GetResult();
+                AnsiConsole.MarkupLine("[green]Installation complete.[/]");
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]Installation failed:[/] {ex.Message.EscapeMarkup()}");
+                return 1;
+            }
+        }
+    }
+
     public class AurUpdateCommand : Command<AurPackageSettings>
     {
         public override int Execute([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
@@ -230,9 +298,15 @@ public class Aur
 
                 manager.PkgbuildDiffRequest += (sender, args) =>
                 {
+                    if (settings.NoConfirm)
+                    {
+                        args.ProceedWithUpdate = true;
+                        return;
+                    }
+
                     var showDiff = AnsiConsole.Confirm(
                         $"[yellow]PKGBUILD changed for {args.PackageName}. View diff?[/]", defaultValue: false);
-                    
+
                     if (showDiff)
                     {
                         AnsiConsole.MarkupLine("[blue]--- Old PKGBUILD ---[/]");
@@ -288,9 +362,16 @@ public class Aur
         }
     }
 
-    public class AurUpgradeCommand : Command
+    public class AurUpgradeSettings : CommandSettings
     {
-        public override int Execute([NotNull] CommandContext context)
+        [CommandOption("--no-confirm")]
+        [Description("Skip confirmation prompts")]
+        public bool NoConfirm { get; set; }
+    }
+
+    public class AurUpgradeCommand : Command<AurUpgradeSettings>
+    {
+        public override int Execute([NotNull] CommandContext context, [NotNull] AurUpgradeSettings settings)
         {
             try
             {
@@ -311,10 +392,13 @@ public class Aur
                     AnsiConsole.MarkupLine($"  {pkg.Name}: {pkg.Version} -> {pkg.NewVersion}");
                 }
 
-                if (!AnsiConsole.Confirm("[yellow]Proceed with upgrade?[/]", defaultValue: true))
+                if (!settings.NoConfirm)
                 {
-                    AnsiConsole.MarkupLine("[yellow]Upgrade cancelled.[/]");
-                    return 0;
+                    if (!AnsiConsole.Confirm("[yellow]Proceed with upgrade?[/]", defaultValue: true))
+                    {
+                        AnsiConsole.MarkupLine("[yellow]Upgrade cancelled.[/]");
+                        return 0;
+                    }
                 }
 
                 manager.PackageProgress += (sender, args) =>
@@ -336,9 +420,15 @@ public class Aur
 
                 manager.PkgbuildDiffRequest += (sender, args) =>
                 {
+                    if (settings.NoConfirm)
+                    {
+                        args.ProceedWithUpdate = true;
+                        return;
+                    }
+
                     var showDiff = AnsiConsole.Confirm(
                         $"[yellow]PKGBUILD changed for {args.PackageName}. View diff?[/]", defaultValue: false);
-                    
+
                     if (showDiff)
                     {
                         AnsiConsole.MarkupLine("[blue]--- Old PKGBUILD ---[/]");

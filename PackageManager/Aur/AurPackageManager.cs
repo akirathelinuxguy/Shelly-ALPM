@@ -42,7 +42,7 @@ public enum PackageProgressStatus
 /// installation of packages from the Arch User Repository (AUR).
 /// </summary>
 public class AurPackageManager(string? configPath = null)
-    : IAurPackageManager, IDisposable
+    : IAurPackageManager
 {
     private AlpmManager _alpm;
     private AurSearchManager _aurSearchManager;
@@ -87,6 +87,8 @@ public class AurPackageManager(string? configPath = null)
             if (installedPkg is null) continue;
             if (VersionComparer.IsNewer(pkg.Version, installedPkg.Version))
             {
+                Console.Error.WriteLine(
+                    $"New version of {pkg.Name} available: {pkg.Version} instead of : {installedPkg.Version}");
                 packagesToUpdate.Add(new AurUpdateDto
                 {
                     Name = pkg.Name,
@@ -218,7 +220,6 @@ public class AurPackageManager(string? configPath = null)
             var allDeps = depends.Concat(makeDepends).Distinct().ToList();
             var installedPackages = _alpm.GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
             var depsToInstall = allDeps.Where(x => !IsDependencySatisfied(x, installedPackages)).ToList();
-
             foreach (var dep in depsToInstall)
             {
                 try
@@ -240,12 +241,30 @@ public class AurPackageManager(string? configPath = null)
             }
 
 
+            // Backup PKGBUILD to PreviousVersions folder
+            var previousVersionsPath = System.IO.Path.Combine(tempPath, "PreviousVersions");
+            System.IO.Directory.CreateDirectory(previousVersionsPath);
+            var pkgbuildPath = System.IO.Path.Combine(tempPath, "PKGBUILD");
+            if (System.IO.File.Exists(pkgbuildPath))
+            {
+                var existingBackups = System.IO.Directory.GetFiles(previousVersionsPath, "PKGBUILD.*");
+                var nextNumber = existingBackups.Length + 1;
+                var backupPath = System.IO.Path.Combine(previousVersionsPath, $"PKGBUILD.{nextNumber}");
+                System.IO.File.Copy(pkgbuildPath, backupPath, overwrite: true);
+            }
+
+            // Remove any existing package files before building
+            foreach (var oldPkgFile in System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*"))
+            {
+                System.IO.File.Delete(oldPkgFile);
+            }
+
             var buildProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "sudo",
-                    Arguments = $"-u {user} makepkg --noconfirm",
+                    Arguments = $"-u {user} makepkg -f --noconfirm",
                     WorkingDirectory = tempPath,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -355,9 +374,216 @@ public class AurPackageManager(string? configPath = null)
 
     public void Dispose()
     {
-        _httpClient.Dispose();
-        _aurSearchManager.Dispose();
-        _alpm.Dispose();
+        _httpClient?.Dispose();
+        _aurSearchManager?.Dispose();
+        _alpm?.Dispose();
+    }
+
+    public async Task InstallPackageVersion(string packageName, string commit)
+    {
+        PackageProgress?.Invoke(this, new PackageProgressEventArgs
+        {
+            PackageName = packageName,
+            CurrentIndex = 1,
+            TotalCount = 1,
+            Status = PackageProgressStatus.Downloading
+        });
+
+        var success = await DownloadPackageAtCommit(packageName, commit);
+
+        if (!success)
+        {
+            PackageProgress?.Invoke(this, new PackageProgressEventArgs
+            {
+                PackageName = packageName,
+                CurrentIndex = 1,
+                TotalCount = 1,
+                Status = PackageProgressStatus.Failed,
+                Message = "Failed to download package at specified commit"
+            });
+            throw new Exception($"Failed to download package {packageName} at commit {commit}");
+        }
+
+        var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
+        var home = $"/home/{user}";
+        var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+
+        PackageProgress?.Invoke(this, new PackageProgressEventArgs
+        {
+            PackageName = packageName,
+            CurrentIndex = 1,
+            TotalCount = 1,
+            Status = PackageProgressStatus.Building,
+            Message = "Building package with makepkg"
+        });
+
+        var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
+        var depends = pkgbuildInfo.Depends.Select(x => x.Trim()).ToList();
+        var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
+        var allDeps = depends.Concat(makeDepends).Distinct().ToList();
+        var installedPackages = _alpm.GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
+        var depsToInstall = allDeps.Where(x => !IsDependencySatisfied(x, installedPackages)).ToList();
+
+        foreach (var dep in depsToInstall)
+        {
+            try
+            {
+                _alpm.InstallPackages(depsToInstall);
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    var pkgName = _alpm.GetPackageNameFromProvides(dep);
+                    _alpm.InstallPackage(pkgName);
+                }
+                catch (Exception ex2)
+                {
+                    Console.Error.WriteLine("Failed to install dependency: " + ex2.Message);
+                }
+            }
+        }
+
+        var buildProcess = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "sudo",
+                Arguments = $"-u {user} makepkg --noconfirm",
+                WorkingDirectory = tempPath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            }
+        };
+        buildProcess.Start();
+        await buildProcess.WaitForExitAsync();
+
+        if (buildProcess.ExitCode != 0)
+        {
+            PackageProgress?.Invoke(this, new PackageProgressEventArgs
+            {
+                PackageName = packageName,
+                CurrentIndex = 1,
+                TotalCount = 1,
+                Status = PackageProgressStatus.Failed,
+                Message = "Failed to build package with makepkg"
+            });
+            throw new Exception($"Failed to build package {packageName}");
+        }
+
+        var pkgFiles = System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*");
+        if (pkgFiles.Length == 0)
+        {
+            PackageProgress?.Invoke(this, new PackageProgressEventArgs
+            {
+                PackageName = packageName,
+                CurrentIndex = 1,
+                TotalCount = 1,
+                Status = PackageProgressStatus.Failed,
+                Message = "No package file found after build"
+            });
+            throw new Exception($"No package file found after building {packageName}");
+        }
+
+        PackageProgress?.Invoke(this, new PackageProgressEventArgs
+        {
+            PackageName = packageName,
+            CurrentIndex = 1,
+            TotalCount = 1,
+            Status = PackageProgressStatus.Installing
+        });
+
+        _alpm.InstallLocalPackage(pkgFiles[0]);
+
+        PackageProgress?.Invoke(this, new PackageProgressEventArgs
+        {
+            PackageName = packageName,
+            CurrentIndex = 1,
+            TotalCount = 1,
+            Status = PackageProgressStatus.Completed
+        });
+    }
+
+    private async Task<bool> DownloadPackageAtCommit(string packageName, string commit)
+    {
+        try
+        {
+            var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
+            var home = $"/home/{user}";
+            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+
+            // Remove existing directory if it exists
+            if (System.IO.Directory.Exists(tempPath))
+            {
+                var rmProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "rm",
+                        Arguments = $"-rf {tempPath}",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                rmProcess.Start();
+                await rmProcess.WaitForExitAsync();
+            }
+
+            // Clone the AUR git repository
+            var cloneProcess = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "sudo",
+                    Arguments = $"-u {user} git clone https://aur.archlinux.org/{packageName}.git {tempPath}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            cloneProcess.Start();
+            await cloneProcess.WaitForExitAsync();
+
+            if (cloneProcess.ExitCode != 0)
+            {
+                return false;
+            }
+
+            // Checkout the specific commit
+            var checkoutProcess = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "sudo",
+                    Arguments = $"-u {user} git checkout {commit}",
+                    WorkingDirectory = tempPath,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            checkoutProcess.Start();
+            await checkoutProcess.WaitForExitAsync();
+
+            if (checkoutProcess.ExitCode != 0)
+            {
+                return false;
+            }
+
+            // Verify PKGBUILD exists
+            var pkgbuildSource = System.IO.Path.Combine(tempPath, "PKGBUILD");
+            return System.IO.File.Exists(pkgbuildSource);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async Task<bool> DownloadPackage(string packageName)

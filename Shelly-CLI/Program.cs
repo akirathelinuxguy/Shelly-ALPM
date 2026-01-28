@@ -112,6 +112,9 @@ public class Program
                 aur.AddCommand<Aur.AurInstallCommand>("install")
                     .WithDescription("Install AUR packages");
 
+                aur.AddCommand<Aur.AurInstallVersionCommand>("install-version")
+                    .WithDescription("Install a specific version of an AUR package by commit hash");
+
                 aur.AddCommand<Aur.AurUpdateCommand>("update")
                     .WithDescription("Update specific AUR packages");
 

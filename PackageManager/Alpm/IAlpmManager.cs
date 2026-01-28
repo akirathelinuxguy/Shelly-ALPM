@@ -35,4 +35,6 @@ public interface IAlpmManager
     /// This installs the first package that provides a given dependency.
     /// </summary>
     string GetPackageNameFromProvides(string provides, AlpmTransFlag flags = AlpmTransFlag.None);
+
+    void Refresh();
 }
