@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Shelly_UI.Enums;
 
 namespace Shelly_UI.Models;
 
@@ -14,8 +15,6 @@ public class ShellyConfig
     
     public bool FlatPackEnabled { get; set; } = false;
     
-    public bool SnapEnabled { get; set; } = false;
-    
     public bool ConsoleEnabled { get; set; } = false;
     
     public double WindowWidth { get; set; } = 800;
@@ -23,4 +22,6 @@ public class ShellyConfig
     public double WindowHeight { get; set; } = 600;
     
     public WindowState WindowState { get; set; } = WindowState.Normal;
+    
+    public DefaultViewEnum DefaultView  { get; set; }
 }

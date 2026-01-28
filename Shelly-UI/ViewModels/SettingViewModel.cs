@@ -1,5 +1,5 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reflection;
@@ -111,19 +111,6 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
-    public bool EnableSnap
-    {
-        get => _enableSnapd;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref _enableSnapd, value);
-            
-            var config = _configService.LoadConfig();
-            config.SnapEnabled = value;
-            _configService.SaveConfig(config);
-        }
-    }
-
     public bool EnableFlatpak
     {
         get => _enableFlatpak;
@@ -204,5 +191,22 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         var asm = Assembly.GetEntryAssembly() ?? typeof(SettingViewModel).Assembly;
         var nameVer = asm.GetName().Version?.ToString();
         return !string.IsNullOrWhiteSpace(nameVer) ? $"v{nameVer}" : "unknown";
+    }
+    
+    public IEnumerable<DefaultViewEnum> DefaultViews { get; } =
+        Enum.GetValues<DefaultViewEnum>();
+    
+    private DefaultViewEnum _defaultScreenEnum;
+    
+    public DefaultViewEnum DefaultScreenEnum
+    {
+        get => _configService.LoadConfig().DefaultView;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _defaultScreenEnum, value); 
+            var config = _configService.LoadConfig();
+            config.DefaultView = value;
+            _configService.SaveConfig(config);
+        }
     }
 }

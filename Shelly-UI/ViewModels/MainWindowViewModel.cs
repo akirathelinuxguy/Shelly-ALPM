@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Reactive.Concurrency;
@@ -9,6 +10,7 @@ using System.Reactive.Disposables.Fluent;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using ReactiveUI;
 using Microsoft.Extensions.DependencyInjection;
 using PackageManager.Alpm;
@@ -215,7 +217,18 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
         CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
-        GoHome.Execute(Unit.Default);
+        _navigationMap = new()
+        {
+            { DefaultViewEnum.HomeScreen, GoHome },
+            { DefaultViewEnum.InstallPackage, GoPackages },
+            { DefaultViewEnum.RemovePackage, GoRemove },
+            { DefaultViewEnum.UpdatePackage, GoUpdate },
+            { DefaultViewEnum.UpdateAur, GoAurUpdate },
+            { DefaultViewEnum.InstallAur, GoAur },
+            { DefaultViewEnum.RemoveAur, GoAurRemove },
+        };
+
+        NavigateToDefaultView();
 
         Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
                 h => ConsoleLogService.Instance.Logs.CollectionChanged += h,
@@ -261,7 +274,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     }
                 }
             });
-        
+
         MessageBus.Current.Listen<SettingsChangedMessage>()
             .Subscribe(RefreshUi)
             .DisposeWith(Disposables);
@@ -270,14 +283,27 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     private void RefreshUi(SettingsChangedMessage msg)
     {
         if (!msg.AurChanged) return;
-        
+
         IsAurEnabled = !IsAurEnabled;
         if (IsAurOpen)
         {
             IsAurOpen = false;
         }
+
         this.RaisePropertyChanged(nameof(IsAurEnabled));
     }
+
+    private void NavigateToDefaultView()
+    {
+        var defaultView = _configService.LoadConfig().DefaultView;
+
+        if (_navigationMap.TryGetValue(defaultView, out var command))
+        {
+            command.Execute(null);
+        }
+    }
+
+    private readonly Dictionary<DefaultViewEnum, ICommand> _navigationMap;
 
     private bool _isGlobalBusy;
 
@@ -615,9 +641,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         get => _isSettingsOpen;
         set => this.RaiseAndSetIfChanged(ref _isSettingsOpen, value);
     }
+
     private readonly CompositeDisposable _disposables = new CompositeDisposable();
     protected CompositeDisposable Disposables => _disposables;
-    
+
     public void Dispose()
     {
         _disposables?.Dispose();
