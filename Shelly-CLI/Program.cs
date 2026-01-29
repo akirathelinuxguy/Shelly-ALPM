@@ -2,6 +2,8 @@ using System.Reflection;
 using Shelly_CLI.Commands;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Flatpak;
+using Shelly;
+using Shelly.Writers;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
