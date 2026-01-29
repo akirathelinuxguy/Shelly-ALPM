@@ -30,7 +30,7 @@
                     <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
                             <TextBlock
-                                Text="{x:Static lang:Resources.Packages}"
+                                Text="{x:Static lang:Resources.UpdatePackages}"
                                 FontWeight="Bold"
                                 Foreground="{DynamicResource SystemBaseHighColor}"
                                 VerticalAlignment="Center" />

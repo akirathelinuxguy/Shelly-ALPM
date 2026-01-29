@@ -70,7 +70,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                 Description = dto.Description,
                 Url = dto.Url,
                 Version = dto.Version,
-                Popularity = dto.Popularity,
+                Popularity = Math.Round(dto.Popularity,2,MidpointRounding.ToZero),
                 NumVotes = dto.NumVotes,
                 Maintainer = dto.Maintainer,
                 FirstSubmitted = DateTimeOffset.FromUnixTimeSeconds(dto?.FirstSubmitted ?? 0).DateTime,

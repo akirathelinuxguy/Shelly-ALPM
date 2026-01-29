@@ -126,4 +126,22 @@
     <data name="ForceSync" xml:space="preserve">
         <value>Force Database Update</value>
     </data>
+    <data name="RemovePackages" xml:space="preserve">
+        <value>Remove Packages</value>
+    </data>
+    <data name="UpdatePackages" xml:space="preserve">
+        <value>Update Packages</value>
+    </data>
+    <data name="InstallPackages" xml:space="preserve">
+        <value>Install Packages</value>
+    </data>
+    <data name="InstallAUR" xml:space="preserve">
+        <value>Install AUR</value>
+    </data>
+    <data name="RemoveAUR" xml:space="preserve">
+        <value>Remove AUR</value>
+    </data>
+    <data name="UpdateAUR" xml:space="preserve">
+        <value>Update AUR</value>
+    </data>
 </root>
