@@ -1,6 +1,9 @@
 using System.Reflection;
 using Shelly_CLI.Commands;
 using Shelly_CLI.Commands.Aur;
+using Shelly_CLI.Commands.Flatpak;
+using Shelly;
+using Shelly.Writers;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -131,31 +134,31 @@ public class Program
             {
                 flatpak.SetDescription("Manage flatpak");
 
-                flatpak.AddCommand<Flatpak.FlatpakInstallCommand>("install")
+                flatpak.AddCommand<FlatpakInstallCommand>("install")
                     .WithDescription("Install flatpak app");
 
-                flatpak.AddCommand<Flatpak.FlatpakUpdateCommand>("update")
+                flatpak.AddCommand<FlatpakUpdateCommand>("update")
                     .WithDescription("Update flatpak app");
 
-                flatpak.AddCommand<Flatpak.FlatpakListCommand>("list")
+                flatpak.AddCommand<FlatpakListCommand>("list")
                     .WithDescription("List installed flatpak apps");
 
-                flatpak.AddCommand<Flatpak.FlatpakListUpdatesCommand>("list-updates")
+                flatpak.AddCommand<FlatpakListUpdatesCommand>("list-updates")
                     .WithDescription("List installed flatpak apps");
 
-                flatpak.AddCommand<Flatpak.FlatpakRunningCommand>("running")
+                flatpak.AddCommand<FlatpakRunningCommand>("running")
                     .WithDescription("List running flatpak apps");
 
-                flatpak.AddCommand<Flatpak.FlatpakRemoveCommand>("uninstall")
+                flatpak.AddCommand<FlatpakRemoveCommand>("uninstall")
                     .WithDescription("Remove flatpak app");
 
-                flatpak.AddCommand<Flatpak.FlatpakRunCommand>("run")
+                flatpak.AddCommand<FlatpakRunCommand>("run")
                     .WithDescription("Run flatpak app");
 
-                flatpak.AddCommand<Flatpak.FlatpakKillCommand>("kill")
+                flatpak.AddCommand<FlatpakKillCommand>("kill")
                     .WithDescription("Kill running flatpak app");
 
-                flatpak.AddCommand<Flatpak.FlathubSearchCommand>("search")
+                flatpak.AddCommand<FlathubSearchCommand>("search")
                     .WithDescription("Search flatpak");
             });
         });

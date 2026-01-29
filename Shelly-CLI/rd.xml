@@ -36,14 +36,17 @@
       <Type Name="Shelly_CLI.Commands.Aur.AurUpgradeCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Aur.AurRemoveCommand" Dynamic="Required All" />
       <!-- Flatpak commands -->
-      <Type Name="Shelly_CLI.Flatpak+FlathubSearchSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlathubSearchCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlatpakSetting" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlatpakInstallCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlatpakRemoveCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlatpakUpdateCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlatpakListCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlatpakListUpdatesCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlathubSearchSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlathubSearchCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakPackageSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakInstallCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakRemoveCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakUpdateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakListCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakListUpdatesCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakRunCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakRunningCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakKillCommand" Dynamic="Required All" />
     </Assembly>
   </Application>
 </Directives>

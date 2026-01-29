@@ -1,7 +1,6 @@
-using System.IO;
 using System.Text;
 
-namespace Shelly_CLI;
+namespace Shelly.Writers;
 
 public class DualOutputWriter : TextWriter
 {
