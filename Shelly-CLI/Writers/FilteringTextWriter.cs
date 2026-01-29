@@ -1,8 +1,7 @@
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Shelly_CLI;
+namespace Shelly.Writers;
 
 /// <summary>
 /// A TextWriter that filters out lines containing [bracketed] patterns when running in terminal mode.
