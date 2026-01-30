@@ -191,30 +191,60 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         GoHome = ReactiveCommand.CreateFromObservable(() =>
         {
             ActiveMenu = MenuOptions.None;
-            return Router.Navigate.Execute(new HomeViewModel(this, appCache, _privilegedOperationService));
+            DisposeCurrentViewModel();
+            var vm = new HomeViewModel(this, appCache, _privilegedOperationService);
+            _currentViewModel = vm;
+            return Router.NavigateAndReset.Execute(vm);
         });
         GoPackages = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService,
-                _credentialManager)));
+        {
+            DisposeCurrentViewModel();
+            var vm = new PackageViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            _currentViewModel = vm;
+            return Router.NavigateAndReset.Execute(vm);
+        });
         GoUpdate = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService, _credentialManager)));
+        {
+            DisposeCurrentViewModel();
+            var vm = new UpdateViewModel(this, _privilegedOperationService, _credentialManager);
+            _currentViewModel = vm;
+            return Router.NavigateAndReset.Execute(vm);
+        });
         GoRemove = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(
-                new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
+        {
+            DisposeCurrentViewModel();
+            var vm = new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            _currentViewModel = vm;
+            return Router.NavigateAndReset.Execute(vm);
+        });
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
         {
             IsSettingsOpen = true;
-            return SettingRouter.Navigate.Execute(new SettingViewModel(this, configService,
-                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService));
+            var vm = new SettingViewModel(this, configService,
+                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService);
+            return SettingRouter.NavigateAndReset.Execute(vm);
         });
         GoAur = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new AurViewModel(this, appCache, _privilegedOperationService,
-                _credentialManager)));
+        {
+            DisposeCurrentViewModel();
+            var vm = new AurViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            _currentViewModel = vm;
+            return Router.NavigateAndReset.Execute(vm);
+        });
         GoAurUpdate = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new AurUpdateViewModel(this, _privilegedOperationService, _credentialManager)));
+        {
+            DisposeCurrentViewModel();
+            var vm = new AurUpdateViewModel(this, _privilegedOperationService, _credentialManager);
+            _currentViewModel = vm;
+            return Router.NavigateAndReset.Execute(vm);
+        });
         GoAurRemove = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(
-                new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
+        {
+            DisposeCurrentViewModel();
+            var vm = new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            _currentViewModel = vm;
+            return Router.NavigateAndReset.Execute(vm);
+        });
         CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
         _navigationMap = new()
@@ -447,6 +477,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         IsPaneOpen = !IsPaneOpen;
     }
 
+    private IRoutableViewModel? _currentViewModel;
+
     public RoutingState Router { get; } = new RoutingState();
 
     public RoutingState SettingRouter { get; } = new RoutingState();
@@ -645,8 +677,18 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     private readonly CompositeDisposable _disposables = new CompositeDisposable();
     protected CompositeDisposable Disposables => _disposables;
 
+    private void DisposeCurrentViewModel()
+    {
+        if (_currentViewModel is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+        _currentViewModel = null;
+    }
+
     public void Dispose()
     {
+        DisposeCurrentViewModel();
         _disposables?.Dispose();
     }
 }
