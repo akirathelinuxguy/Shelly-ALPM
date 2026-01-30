@@ -8,6 +8,7 @@ public interface IAlpmManager
     event EventHandler<AlpmProgressEventArgs>? Progress;
     event EventHandler<AlpmPackageOperationEventArgs>? PackageOperation;
     event EventHandler<AlpmQuestionEventArgs>? Question;
+    event EventHandler<AlpmReplacesEventArgs>? Replaces;
 
     void IntializeWithSync();
     void Initialize(bool root = false);

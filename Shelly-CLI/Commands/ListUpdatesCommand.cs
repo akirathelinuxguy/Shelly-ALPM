@@ -1,22 +1,37 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.Json;
 using PackageManager.Alpm;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands;
 
-public class ListUpdatesCommand : Command
+public class ListUpdatesCommand : Command<DefaultSettings>
 {
-    public override int Execute([NotNull] CommandContext context)
+    public override int Execute([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
     {
         using var manager = new AlpmManager();
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
+        if (!settings.JsonOutput)
+        {
+            AnsiConsole.Status()
+                .Spinner(Spinner.Known.Dots)
+                .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
+        }
+        else
+        {
+            manager.IntializeWithSync();
+        }
 
         var updates = manager.GetPackagesNeedingUpdate();
+
+        if (settings.JsonOutput)
+        {
+            var json = JsonSerializer.Serialize(updates, ShellyCLIJsonContext.Default.ListAlpmPackageUpdateDto);
+            Console.WriteLine(json);
+            return 0;
+        }
 
         if (updates.Count == 0)
         {

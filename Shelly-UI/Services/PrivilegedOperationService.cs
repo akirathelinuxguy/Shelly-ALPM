@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using PackageManager.Alpm;
 using Shelly.Utilities.System;
 using Shelly_UI.Views;
 
@@ -113,6 +114,109 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     {
         var packageArgs = string.Join(" ", packages);
         return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update", "--no-confirm", packageArgs);
+    }
+
+    public async Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync()
+    {
+        // Use privileged execution to sync databases and get updates
+        var result = await ExecutePrivilegedCommandAsync("Check for Updates", "list-updates", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            // The output may contain multiple lines, find the JSON line
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
+                    return updates ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(result.Output.Trim(), ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
+            return allUpdates ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
+            return [];
+        }
+    }
+
+    private async Task<OperationResult> ExecuteCommandAsync(params string[] args)
+    {
+        var arguments = string.Join(" ", args);
+        var fullCommand = $"{_cliPath} {arguments}";
+
+        Console.WriteLine($"Executing command: {fullCommand}");
+
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = _cliPath,
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            }
+        };
+
+        var outputBuilder = new StringBuilder();
+        var errorBuilder = new StringBuilder();
+
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                outputBuilder.AppendLine(e.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                errorBuilder.AppendLine(e.Data);
+                Console.Error.WriteLine(e.Data);
+            }
+        };
+
+        try
+        {
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            await process.WaitForExitAsync();
+
+            return new OperationResult
+            {
+                Success = process.ExitCode == 0,
+                Output = outputBuilder.ToString(),
+                Error = errorBuilder.ToString(),
+                ExitCode = process.ExitCode
+            };
+        }
+        catch (Exception ex)
+        {
+            return new OperationResult
+            {
+                Success = false,
+                Output = string.Empty,
+                Error = ex.Message,
+                ExitCode = -1
+            };
+        }
     }
 
     private async Task<OperationResult> ExecutePrivilegedCommandAsync(string operationDescription, params string[] args)

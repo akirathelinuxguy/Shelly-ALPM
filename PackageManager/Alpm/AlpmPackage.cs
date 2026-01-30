@@ -16,6 +16,8 @@ public class AlpmPackage(IntPtr pkgPtr)
 
     public string Url => Marshal.PtrToStringUTF8(AlpmReference.GetPkgUrl(PackagePtr))!;
 
+    public List<string> Replaces => GetDependencyList(AlpmReference.GetPkgReplaces(PackagePtr));
+
     public string Repository
     {
         get
@@ -57,11 +59,37 @@ public class AlpmPackage(IntPtr pkgPtr)
         Description = Description,
         Url = Url,
         Repository = Repository,
+        Replaces = Replaces,
     };
 
     public override string ToString()
     {
         return $"Package: {Name}, Version: {Version}, Size: {Size} bytes";
     }
-    
+
+    private static List<string> GetDependencyList(IntPtr listPtr)
+    {
+        var dependencies = new List<string>();
+        var currentPtr = listPtr;
+        while (currentPtr != IntPtr.Zero)
+        {
+            var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+            if (node.Data != IntPtr.Zero)
+            {
+                var depString = AlpmReference.DepComputeString(node.Data);
+                if (depString != IntPtr.Zero)
+                {
+                    var str = Marshal.PtrToStringUTF8(depString);
+                    if (!string.IsNullOrEmpty(str))
+                    {
+                        dependencies.Add(str);
+                    }
+                }
+            }
+
+            currentPtr = node.Next;
+        }
+
+        return dependencies;
+    }
 }
