@@ -191,7 +191,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         GoHome = ReactiveCommand.CreateFromObservable(() =>
         {
             ActiveMenu = MenuOptions.None;
-            return Router.Navigate.Execute(new HomeViewModel(this, appCache));
+            return Router.Navigate.Execute(new HomeViewModel(this, appCache, _privilegedOperationService));
         });
         GoPackages = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService,

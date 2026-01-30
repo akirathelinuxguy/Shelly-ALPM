@@ -30,6 +30,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     public event EventHandler<AlpmProgressEventArgs>? Progress;
     public event EventHandler<AlpmPackageOperationEventArgs>? PackageOperation;
     public event EventHandler<AlpmQuestionEventArgs>? Question;
+    public event EventHandler<AlpmReplacesEventArgs>? Replaces;
 
     public void IntializeWithSync()
     {
@@ -813,6 +814,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
+            CheckTransactionReplaces(_handle);
+
             if (TransCommit(_handle, out dataPtr) != 0)
             {
                 throw new Exception(
@@ -826,6 +829,22 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         finally
         {
             _ = TransRelease(_handle);
+        }
+    }
+
+    private void CheckTransactionReplaces(IntPtr handle)
+    {
+        var addList = TransGetAdd(handle);
+        if (addList == IntPtr.Zero) return;
+
+        var packages = AlpmPackage.FromList(addList);
+        foreach (var pkg in packages)
+        {
+            var replaces = pkg.Replaces;
+            if (replaces.Count > 0)
+            {
+                Replaces?.Invoke(this, new AlpmReplacesEventArgs(pkg.Name, pkg.Repository, replaces));
+            }
         }
     }
 

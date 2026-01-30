@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace PackageManager.Alpm;
 
 public record AlpmPackageDto
@@ -11,4 +13,6 @@ public record AlpmPackageDto
     public string Url { get; init; } = string.Empty;
 
     public string Repository { get; init; } = string.Empty;
+
+    public List<string> Replaces { get; init; } = [];
 }

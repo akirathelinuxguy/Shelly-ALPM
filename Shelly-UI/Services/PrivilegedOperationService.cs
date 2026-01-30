@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using PackageManager.Alpm;
 using Shelly.Utilities.System;
 using Shelly_UI.Views;
 
@@ -113,6 +114,170 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     {
         var packageArgs = string.Join(" ", packages);
         return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update", "--no-confirm", packageArgs);
+    }
+
+    public async Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync()
+    {
+        // Use privileged execution to sync databases and get updates
+        var result = await ExecutePrivilegedCommandAsync("Check for Updates", "list-updates", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            // The output may contain multiple lines, find the JSON line
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
+                    return updates ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
+            return allUpdates ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
+            return [];
+        }
+    }
+
+    public async Task<List<AlpmPackageDto>> GetAvailablePackagesAsync()
+    {
+        var result = await ExecuteCommandAsync("list-available", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            // The output may contain multiple lines, find the JSON line
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                    return packages ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse available packages JSON: {ex.Message}");
+            return [];
+        }
+    }
+
+    public async Task<List<AlpmPackageDto>> GetInstalledPackagesAsync()
+    {
+        var result = await ExecuteCommandAsync("list-installed", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            // The output may contain multiple lines, find the JSON line
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                    return packages ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse installed packages JSON: {ex.Message}");
+            return [];
+        }
+    }
+
+    private async Task<OperationResult> ExecuteCommandAsync(params string[] args)
+    {
+        var arguments = string.Join(" ", args);
+        var fullCommand = $"{_cliPath} {arguments}";
+
+        Console.WriteLine($"Executing command: {fullCommand}");
+
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = _cliPath,
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            }
+        };
+
+        try
+        {
+            process.Start();
+            
+            // Read output and error streams synchronously to avoid race conditions
+            // Use Task.WhenAll to read both streams concurrently
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+            
+            await Task.WhenAll(outputTask, errorTask);
+            await process.WaitForExitAsync();
+            
+            var output = await outputTask;
+            var error = await errorTask;
+            
+            // Log stderr for debugging
+            if (!string.IsNullOrEmpty(error))
+            {
+                Console.Error.WriteLine(error);
+            }
+
+            return new OperationResult
+            {
+                Success = process.ExitCode == 0,
+                Output = output,
+                Error = error,
+                ExitCode = process.ExitCode
+            };
+        }
+        catch (Exception ex)
+        {
+            return new OperationResult
+            {
+                Success = false,
+                Output = string.Empty,
+                Error = ex.Message,
+                ExitCode = -1
+            };
+        }
     }
 
     private async Task<OperationResult> ExecutePrivilegedCommandAsync(string operationDescription, params string[] args)
@@ -270,5 +435,17 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 ExitCode = -1
             };
         }
+    }
+
+    /// <summary>
+    /// Strips UTF-8 BOM (Byte Order Mark) from the beginning of a string if present.
+    /// </summary>
+    private static string StripBom(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+        
+        // UTF-8 BOM is 0xEF 0xBB 0xBF which appears as \uFEFF in .NET strings
+        return input.TrimStart('\uFEFF');
     }
 }
