@@ -61,7 +61,7 @@
                     <DataGrid
                         Name="AurRemoveDataGrid"
                         Grid.Row="1"
-                        ItemsSource="{Binding FilteredPackages}"
+                        ItemsSource="{Binding AvailablePackages}"
                         AutoGenerateColumns="False"
                         CanUserResizeColumns="True"
                         IsReadOnly="True"
