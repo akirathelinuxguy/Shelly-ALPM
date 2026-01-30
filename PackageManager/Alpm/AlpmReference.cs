@@ -1125,6 +1125,14 @@ namespace PackageManager.Alpm
         [LibraryImport(LibName, EntryPoint = "alpm_strerror")]
         public static partial IntPtr StrError(AlpmErrno err);
 
+        /// <summary>
+        /// Computes a string representation of a dependency.
+        /// </summary>
+        /// <param name="dep">The dependency pointer.</param>
+        /// <returns>A pointer to the computed string (must be freed by caller).</returns>
+        [LibraryImport(LibName, EntryPoint = "alpm_dep_compute_string")]
+        public static partial IntPtr DepComputeString(IntPtr dep);
+
         #endregion
 
         // This static constructor sets up the resolver

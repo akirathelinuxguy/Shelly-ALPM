@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
@@ -17,7 +16,6 @@ namespace Shelly_UI.ViewModels;
 public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    private IAlpmManager _alpmManager = AlpmService.Instance;
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<UpdateModel>> _filteredPackages;
@@ -56,8 +54,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 Console.WriteLine($"Failed to sync databases: {result.Error}");
             }
 
-            // Re-initialize the local alpm manager to pick up synced data
-            await Task.Run(() => _alpmManager.Initialize());
+            // Reload data via CLI after sync
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 PackagesForUpdating.Clear();
@@ -82,7 +79,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 // Request credentials 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync("Update Packages")) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -91,6 +88,8 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     if (!isValidated) return;
                 }
 
+                // Determine if this is a full system upgrade or selective update
+                var isFullUpgrade = selectedPackages.Count == PackagesForUpdating.Count;
 
                 // Set busy
                 if (mainWindow != null)
@@ -98,11 +97,22 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Updating selected packages...";
+                    mainWindow.GlobalBusyMessage = isFullUpgrade 
+                        ? "Performing full system upgrade..." 
+                        : "Updating selected packages...";
                 }
 
-                //do work
-                var result = await _privilegedOperationService.UpdatePackagesAsync(selectedPackages);
+                // Use full system upgrade when all packages are selected, otherwise update specific packages
+                OperationResult result;
+                if (isFullUpgrade)
+                {
+                    result = await _privilegedOperationService.UpgradeSystemAsync();
+                }
+                else
+                {
+                    result = await _privilegedOperationService.UpdatePackagesAsync(selectedPackages);
+                }
+                
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to update packages: {result.Error}");
@@ -125,8 +135,8 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         {
             try
             {
-                //await Task.Run(() => _alpmManager.IntializeWithSync());
-                var updates = await Task.Run(() => AlpmService.Instance.GetPackagesNeedingUpdate());
+                // Use CLI via PrivilegedOperationService to get packages needing update
+                var updates = await _privilegedOperationService.GetPackagesNeedingUpdateAsync();
 
                 var models = updates.Select(u => new UpdateModel
                 {

@@ -7,7 +7,7 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands;
 
-public class UpgradeSettings : CommandSettings
+public class UpgradeSettings : DefaultSettings
 {
     [CommandOption("--no-confirm")]
     [Description("Skip confirmation prompt")]
@@ -39,6 +39,14 @@ public class UpgradeCommand : Command<UpgradeSettings>
             AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {packageProgress[args.PackageName]}%");
         };
 
+        manager.Replaces += (sender, args) =>
+        {
+            foreach (var replace in args.Replaces)
+            {
+                AnsiConsole.MarkupLine($"[magenta]Replacement:[/] [cyan]{args.Repository}/{args.PackageName}[/] replaces [red]{replace}[/]");
+            }
+        };
+
         manager.Question += (sender, args) =>
         {
             if (settings.NoConfirm)
@@ -59,6 +67,18 @@ public class UpgradeCommand : Command<UpgradeSettings>
         AnsiConsole.MarkupLine("[yellow]Checking for system updates...[/]");
         AnsiConsole.MarkupLine("[yellow] Initializing and syncing repositories...[/]");
         manager.IntializeWithSync();
+        var packagesNeedingUpdate = manager.GetPackagesNeedingUpdate();
+        if (packagesNeedingUpdate.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[green]System is up to date![/]");
+            return 0;
+        }
+
+        var table = new Table();
+        table.AddColumn("Package");
+        table.AddColumn("Version");
+        table.AddColumn("Status");
+        AnsiConsole.Write(table);
         AnsiConsole.MarkupLine("[yellow] Starting System Upgrade...[/]");
         manager.SyncSystemUpdate();
 
