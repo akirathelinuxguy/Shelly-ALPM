@@ -31,17 +31,15 @@ public class ListAvailableCommand : Command<DefaultSettings>
                         .Start("Initializing ALPM...", ctx => { manager.Initialize(); });
                 }
             }
+            else if (settings.Sync)
+            {
+                manager.IntializeWithSync();
+            }
             else
             {
-                if (settings.Sync)
-                {
-                    manager.IntializeWithSync();
-                }
-                else
-                {
-                    manager.Initialize();
-                }
+                manager.Initialize();
             }
+
 
             var packages = manager.GetAvailablePackages();
 
