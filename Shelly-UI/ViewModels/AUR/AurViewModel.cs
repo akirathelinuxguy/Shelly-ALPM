@@ -180,4 +180,14 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
     }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _aurManager?.Dispose();
+            SearchedPackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

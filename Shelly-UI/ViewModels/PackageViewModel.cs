@@ -228,4 +228,14 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
     }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _filteredPackages?.Dispose();
+            AvaliablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

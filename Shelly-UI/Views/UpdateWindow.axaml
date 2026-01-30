@@ -66,6 +66,7 @@
                     </Border>
                     <DataGrid
                         Grid.Row="1"
+                        Name="UpdateDataGrid"
                         ItemsSource="{Binding FilteredPackages}"
                         AutoGenerateColumns="False"
                         IsReadOnly="True"

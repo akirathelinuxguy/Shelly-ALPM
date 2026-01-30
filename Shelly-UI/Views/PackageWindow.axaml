@@ -65,6 +65,7 @@
                         </Grid>
                     </Border>
                     <DataGrid
+                        Name="PackageDataGrid"
                         Grid.Row="1"
                         ItemsSource="{Binding FilteredPackages}"
                         AutoGenerateColumns="False"

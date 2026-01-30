@@ -204,4 +204,15 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
     }
     
     public ReactiveCommand<AurModel, Unit> TogglePackageCheckCommand { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _aurManager?.Dispose();
+            _filteredPackages?.Dispose();
+            AvailablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

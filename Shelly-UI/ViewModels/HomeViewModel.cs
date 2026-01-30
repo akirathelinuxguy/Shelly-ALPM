@@ -16,7 +16,7 @@ using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
-public class HomeViewModel : ViewModelBase, IRoutableViewModel
+public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
 {
     private IAppCache _appCache;
     private readonly IPrivilegedOperationService _privilegedOperationService;
@@ -156,4 +156,10 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
     }
 
     #endregion
+
+    public void Dispose()
+    {
+        InstalledPackages?.Clear();
+        FeedItems?.Clear();
+    }
 }

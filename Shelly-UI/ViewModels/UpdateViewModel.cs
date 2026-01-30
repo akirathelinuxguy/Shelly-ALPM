@@ -207,4 +207,14 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     }
 
     public ReactiveCommand<UpdateModel, Unit> TogglePackageCheckCommand { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _filteredPackages?.Dispose();
+            PackagesForUpdating?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

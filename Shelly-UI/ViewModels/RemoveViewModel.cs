@@ -208,4 +208,14 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     }
     
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _filteredPackages?.Dispose();
+            AvailablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }
