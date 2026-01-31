@@ -108,7 +108,7 @@ public class Program
                 aur.AddCommand<AurSearchCommand>("search")
                     .WithDescription("Search for AUR packages");
 
-                aur.AddCommand<AurListInstalledCommand>("list")
+                aur.AddCommand<AurListInstalledCommand>("list-installed")
                     .WithDescription("List installed AUR packages");
 
                 aur.AddCommand<AurListUpdatesCommand>("list-updates")
