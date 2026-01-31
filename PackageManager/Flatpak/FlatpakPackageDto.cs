@@ -16,6 +16,7 @@ public class FlatpakPackageDto
     public string Summary { get; set; }  = string.Empty;
     public int Kind { get; init; }
     public string? IconPath { get; set; }
+    public string Description { get; set; } = string.Empty;
 }
 
 [JsonSourceGenerationOptions(

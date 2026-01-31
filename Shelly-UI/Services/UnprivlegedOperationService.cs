@@ -63,12 +63,12 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
 
     public async Task<UnprivilegedOperationResult> ListFlatpakPackages()
     {
-        return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list");
+        return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list", "--json");
     }
-    
+
     public async Task<UnprivilegedOperationResult> ListFlatpakUpdates()
     {
-        return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates");
+        return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates", "--json");
     }
 
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages)
@@ -79,15 +79,28 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
 
     public async Task<UnprivilegedOperationResult> ListAppstreamFlatpak()
     {
-        return await ExecuteUnprivilegedCommandAsync("Get local appstream", "flatpak get-remote-appstream");
+        return await ExecuteUnprivilegedCommandAsync("Get local appstream", "flatpak get-remote-appstream", "--json");
     }
 
-   
+    public async Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package)
+    {
+        return await ExecuteUnprivilegedCommandAsync("Update package", "flatpak update", package);
+    }
+    
+    public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package)
+    {
+        return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package);
+    }
+    
+    public async Task<UnprivilegedOperationResult> InstallFlatpakPackage(string package)
+    {
+        return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak install", package);
+    }
 
     private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         params string[] args)
     {
-        var arguments = string.Join(" ", args) + " --json";
+        var arguments = string.Join(" ", args);
         var fullCommand = $"{_cliPath} {arguments}";
 
         Console.WriteLine($"Executing privileged command: {fullCommand}");
@@ -173,7 +186,7 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
             stdinWriter.Close();
 
             var success = process.ExitCode == 0;
-            
+
             return new UnprivilegedOperationResult
             {
                 Success = success,

@@ -17,10 +17,11 @@ public class Database
 
     public async Task<bool> AddToDatabase(List<FlatpakModel> models)
     {
-        using var db = new LiteDatabase(dbFolder);
-        var col = db.GetCollection<FlatpakModel>("flatpaks");
+      
         try
         {
+            using var db = new LiteDatabase(dbFolder);
+            var col = db.GetCollection<FlatpakModel>("flatpaks");
             foreach (var model in models)
             {
                 col.Upsert(model);

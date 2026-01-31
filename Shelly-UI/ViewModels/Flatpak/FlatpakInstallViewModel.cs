@@ -24,41 +24,58 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
     private string? _searchText;
-    
+
     private Database _db = new Database();
     public ObservableCollection<FlatpakModel> Flatpaks { get; set; } = new();
     private int _currentPage = 0;
     private bool _isLoading = false;
-    
+
     public ReactiveCommand<Unit, Unit> LoadInitialDataCommand { get; }
     public ReactiveCommand<Unit, Unit> LoadMoreCommand { get; }
     public ReactiveCommand<Unit, Unit> SearchCommand { get; }
-    
+
 
     public FlatpakInstallViewModel(IScreen screen)
     {
         HostScreen = screen;
 
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
-        AvailablePackages = new ObservableCollection<FlatpakModel>();
 
         LoadInitialDataCommand = ReactiveCommand.CreateFromTask(LoadInitialDataAsync);
         LoadMoreCommand = ReactiveCommand.CreateFromTask(LoadMoreAsync);
         SearchCommand = ReactiveCommand.CreateFromTask(PerformSearchAsync);
 
-        RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
+        InstallPackagesCommand = ReactiveCommand.CreateFromTask<FlatpakModel>(InstallPackage);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
-        RemovePackageCommand = ReactiveCommand.Create<FlatpakModel>(RemovePackage);
-        
+
         //LoadData();
     }
 
+    /// <summary>
+    /// Updates the Database with the most recent information in the local reference file.
+    /// </summary>
     private async Task Refresh()
     {
         try
         {
-            await new Database().AddToDatabase(AvailablePackages.ToList());
-          
+            var avaliable = await _unprivilegedOperationService.ListAppstreamFlatpak();
+            var cleanOutput = avaliable.Output.Replace(System.Environment.NewLine, "");
+            var packages = JsonSerializer.Deserialize(
+                cleanOutput,
+                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto) ?? new List<FlatpakPackageDto>();
+
+            var models = packages.Select(u => new FlatpakModel
+            {
+                Name = u.Name,
+                Version = u.Version,
+                Summary = u.Summary,
+                IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
+                Id = u.Id,
+                Kind = u.Kind == 0
+                    ? "App"
+                    : "Runtime",
+            }).ToList();
+            await new Database().AddToDatabase(models.ToList());
         }
         catch (Exception e)
         {
@@ -70,42 +87,46 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
     {
         Flatpaks.Clear();
         _currentPage = 0;
-        
+
         var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText));
-        
+
         foreach (var item in items)
         {
             Flatpaks.Add(item);
         }
     }
-    
+
     private async Task LoadInitialDataAsync()
     {
         Flatpaks.Clear();
         _currentPage = 0;
-        
+
         var items = await Task.Run(() => _db.GetNextPage(_currentPage));
-        
+
         foreach (var item in items)
         {
             Flatpaks.Add(item);
         }
     }
-    
+
     private async Task LoadMoreAsync()
     {
         if (_isLoading) return;
-        
+
         _isLoading = true;
         _currentPage++;
-        
+
         try
         {
-            var items = await Task.Run(() => _db.GetNextPage(_currentPage));
-            
-            foreach (var item in items)
+            var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText));
+
+            if (items.Any())
             {
-                Flatpaks.Add(item);
+
+                foreach (var item in items)
+                {
+                    Flatpaks.Add(item);
+                }
             }
         }
         finally
@@ -139,59 +160,49 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         ShowConfirmDialog = !ShowConfirmDialog;
     }
 
-    private async Task RemovePackages()
+    public async Task InstallPackage(FlatpakModel package)
     {
-        var selectedPackages = AvailablePackages.Select(x => x.Name).ToList();
-        if (selectedPackages.Any())
+        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+        try
         {
-            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
-
-            try
+            // Set busy
+            if (mainWindow != null)
             {
-                // Set busy
-                if (mainWindow != null)
-                {
-                    mainWindow.GlobalProgressValue = 0;
-                    mainWindow.GlobalProgressText = "0%";
-                    mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Removing selected packages...";
-                }
-
-                //do work
-
-                var result = await _unprivilegedOperationService.RemoveFlatpakPackage(selectedPackages);
-                if (!result.Success)
-                {
-                    Console.WriteLine($"Failed to remove packages: {result.Error}");
-                }
-
-                await Refresh();
+                mainWindow.GlobalProgressValue = 0;
+                mainWindow.GlobalProgressText = "0%";
+                mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBusyMessage = "Installing package...";
             }
-            finally
+
+            //do work
+
+            var result = await _unprivilegedOperationService.InstallFlatpakPackage(package.Id);
+            if (!result.Success)
             {
-                //always exit globally busy in case of failure
-                if (mainWindow != null)
-                {
-                    mainWindow.IsGlobalBusy = false;
-                }
+                Console.WriteLine($"Failed to remove packages: {result.Error}");
             }
         }
-        else
+        finally
         {
-            ShowConfirmDialog = false;
+            //always exit globally busy in case of failure
+            if (mainWindow != null)
+            {
+                mainWindow.IsGlobalBusy = false;
+            }
         }
     }
+
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
     public System.Reactive.Unit Unit => System.Reactive.Unit.Default;
 
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
+    public ReactiveCommand<FlatpakModel, System.Reactive.Unit> InstallPackagesCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
-    public ReactiveCommand<FlatpakModel, Unit> RemovePackageCommand { get; }
 
     public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
-    
+
 
     public string? SearchText
     {
@@ -199,13 +210,6 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
 
-    private void RemovePackage(FlatpakModel package)
-    {
-        AvailablePackages.Remove(package);
-    }
-
-    public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
-    
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -213,6 +217,7 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
             AvailablePackages?.Clear();
             Flatpaks?.Clear();
         }
+
         base.Dispose(disposing);
     }
 }

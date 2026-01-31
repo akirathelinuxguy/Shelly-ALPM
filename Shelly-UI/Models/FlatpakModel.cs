@@ -14,4 +14,5 @@ public class FlatpakModel
     public string Summary { get; set; }  = string.Empty;
     public string IconPath { get; set; } = string.Empty;
     public string Kind { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
 }

@@ -41,25 +41,13 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
             .ObserveOn(RxApp.MainThreadScheduler)
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
-
-        RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
-        RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
-        RemovePackageCommand = ReactiveCommand.Create<FlatpakModel>(RemovePackage);
+        
+        RefreshCommand = ReactiveCommand.Create(LoadData);
+        RemovePackageCommand = ReactiveCommand.CreateFromTask<FlatpakModel>(RemovePackage);
 
         LoadData();
     }
-
-    private async Task Refresh()
-    {
-        try
-        {
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Failed to refresh installed packages: {e.Message}");
-        }
-    }
-
+    
     private async void LoadData()
     {
         try
@@ -73,6 +61,7 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
             {
                 Name = u.Name,
                 Version = u.Version,
+                Id = u.Id,
                 IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
                 Kind = u.Kind == 0
                 ? "App"
@@ -80,6 +69,7 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
             }).ToList();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
+                AvailablePackages.Clear();
                 foreach (var pkg in models)
                 {
                     AvailablePackages.Add(pkg);
@@ -119,54 +109,45 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
         ShowConfirmDialog = !ShowConfirmDialog;
     }
 
-    private async Task RemovePackages()
+    public async Task RemovePackage(FlatpakModel package)
     {
-        var selectedPackages = AvailablePackages.Select(x => x.Name).ToList();
-        if (selectedPackages.Any())
+        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+        try
         {
-            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
-
-            try
+            // Set busy
+            if (mainWindow != null)
             {
-                // Set busy
-                if (mainWindow != null)
-                {
-                    mainWindow.GlobalProgressValue = 0;
-                    mainWindow.GlobalProgressText = "0%";
-                    mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Removing selected packages...";
-                }
-
-                //do work
-
-                var result = await _unprivilegedOperationService.RemoveFlatpakPackage(selectedPackages);
-                if (!result.Success)
-                {
-                    Console.WriteLine($"Failed to remove packages: {result.Error}");
-                }
-
-                await Refresh();
+                mainWindow.GlobalProgressValue = 0;
+                mainWindow.GlobalProgressText = "0%";
+                mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBusyMessage = "Removing selected package...";
             }
-            finally
+
+            //do work
+
+            var result = await _unprivilegedOperationService.RemoveFlatpakPackage(package.Id);
+            if (!result.Success)
             {
-                //always exit globally busy in case of failure
-                if (mainWindow != null)
-                {
-                    mainWindow.IsGlobalBusy = false;
-                }
+                Console.WriteLine($"Failed to remove packages: {result.Error}");
             }
+
+            LoadData();
         }
-        else
+        finally
         {
-            ShowConfirmDialog = false;
+            //always exit globally busy in case of failure
+            if (mainWindow != null)
+            {
+                mainWindow.IsGlobalBusy = false;
+            }
         }
     }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
     public System.Reactive.Unit Unit => System.Reactive.Unit.Default;
-
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
+    
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
     public ReactiveCommand<FlatpakModel, Unit> RemovePackageCommand { get; }
 
@@ -178,11 +159,6 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
     {
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
-    }
-    
-    private void RemovePackage(FlatpakModel package)
-    {
-        AvailablePackages.Remove(package);
     }
 
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }

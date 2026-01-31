@@ -67,26 +67,34 @@
                                         BorderBrush="{DynamicResource SystemBaseHighColor}"
                                         BorderThickness="1"
                                         BoxShadow="0 6 16 0 #33000000">
-                                        <Grid RowDefinitions="*,*">
+                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                             <Image
                                                 Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
                                                 Width="64"
                                                 Height="64"
                                                 Stretch="Uniform"
+                                                VerticalAlignment="Center"
                                                 HorizontalAlignment="Left"
                                                 Margin="0,0,0,8" />
-                                            <TextBlock Grid.Row="1" Text="{Binding Name}"
-                                                       FontWeight="Bold" />
-                                            <TextBlock Grid.Row="1" Text="{Binding Kind}"
-                                                       FontWeight="Bold" />
-                                            <TextBlock Grid.Row="1"
-                                                       Text="{Binding Version}"
-                                                       Margin="0,4,0,0" />
-                                            <Button Grid.Row="1"
-                                                    Content="{x:Static lang:Resources.Update}"
-                                                    HorizontalAlignment="Right"
-                                                    Margin="0,8,0,0"
-                                                    CommandParameter="{Binding}" />
+                                            <StackPanel Margin="12,0" Grid.Column="1">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="Bold" />
+                                                <TextBlock
+                                                    Text="{Binding Summary}"
+                                                    Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Button
+                                                Grid.Column="2"
+                                                Margin="12,0,0,0"
+                                                Padding="8"
+                                                HorizontalAlignment="Right"
+                                                Background="Transparent"
+                                                Command="{Binding $parent[ItemsControl].((flatpak1:FlatpakUpdateViewModel)DataContext).UpdateCommand}"
+                                                CommandParameter="{Binding}">
+                                                <avalonia:MaterialIcon Kind="Download"
+                                                                       Foreground="{DynamicResource SystemBaseHighColor}"
+                                                                       Width="20" Height="20" />
+                                            </Button>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
