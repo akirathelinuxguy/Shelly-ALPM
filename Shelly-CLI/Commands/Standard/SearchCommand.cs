@@ -8,7 +8,7 @@ using PackageManager.Alpm;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace Shelly_CLI.Commands;
+namespace Shelly_CLI.Commands.Standard;
 
 public class SearchSettings : DefaultSettings
 {

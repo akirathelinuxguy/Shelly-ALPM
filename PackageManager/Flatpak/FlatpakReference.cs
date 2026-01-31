@@ -101,6 +101,9 @@ internal static partial class FlatpakReference
 
     [LibraryImport(GLibName, EntryPoint = "g_ptr_array_unref")]
     public static partial void GPtrArrayUnref(IntPtr array);
+
+    [LibraryImport(GLibName, EntryPoint = "g_error_free")]
+    public static partial void GErrorFree(IntPtr error);
     
     #endregion
 

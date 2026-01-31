@@ -21,6 +21,7 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
             return packages;
         }
 
@@ -39,6 +40,7 @@ public class FlatpakManager
 
                 if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
                 {
+                    FlatpakReference.GErrorFree(refsError);
                     FlatpakReference.GObjectUnref(installationPtr);
                     continue;
                 }
@@ -82,6 +84,7 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
             return false;
         }
 
@@ -131,6 +134,7 @@ public class FlatpakManager
 
         if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(refsError);
             return null;
         }
 
@@ -254,6 +258,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return "Failed to get system installations.";
         }
 
@@ -286,6 +292,7 @@ public class FlatpakManager
 
             if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
             {
+                FlatpakReference.GErrorFree(transactionError);
                 return "Failed to create installation transaction.";
             }
 
@@ -296,6 +303,7 @@ public class FlatpakManager
 
                 if (!addSuccess || addError != IntPtr.Zero)
                 {
+                    FlatpakReference.GErrorFree(addError);
                     return $"Failed to add {appId} to installation queue. Check if the app ID is correct.";
                 }
                 
@@ -304,6 +312,7 @@ public class FlatpakManager
 
                 if (!runSuccess || runError != IntPtr.Zero)
                 {
+                    FlatpakReference.GErrorFree(runError);
                     return $"Installation of {appId} failed. You may need elevated permissions.";
                 }
 
@@ -330,6 +339,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || remotesPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(remotesPtr);
             return null;
         }
 
@@ -366,6 +377,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return "Failed to get system installations.";
         }
 
@@ -389,6 +402,7 @@ public class FlatpakManager
 
                 if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
                 {
+                    FlatpakReference.GErrorFree(transactionError);
                     return "Failed to create uninstallation transaction.";
                 }
 
@@ -399,6 +413,7 @@ public class FlatpakManager
 
                     if (!addSuccess || addError != IntPtr.Zero)
                     {
+                        FlatpakReference.GErrorFree(addError);
                         return $"Failed to add {nameOrId} to uninstallation queue.";
                     }
 
@@ -407,6 +422,7 @@ public class FlatpakManager
 
                     if (!runSuccess || runError != IntPtr.Zero)
                     {
+                        FlatpakReference.GErrorFree(runError);
                         return $"Uninstallation of {nameOrId} failed. You may need elevated permissions.";
                     }
 
@@ -437,6 +453,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return "Failed to get system installations.";
         }
 
@@ -460,6 +478,7 @@ public class FlatpakManager
 
                 if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
                 {
+                    FlatpakReference.GErrorFree(transactionError);
                     return "Failed to create update transaction.";
                 }
 
@@ -471,6 +490,7 @@ public class FlatpakManager
                     if (!addSuccess || addError != IntPtr.Zero)
                     {
                         var response = FlatpakReference.GetErrorMessage(addError);
+                        FlatpakReference.GErrorFree(addError);
                         return
                             $"Failed to add {nameOrId} to update queue. Error: {response} App may already be up to date.";
                     }
@@ -480,6 +500,7 @@ public class FlatpakManager
 
                     if (!runSuccess || runError != IntPtr.Zero)
                     {
+                        FlatpakReference.GErrorFree(runError);
                         return $"Update of {nameOrId} failed. You may need elevated permissions.";
                     }
 
@@ -511,6 +532,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return packages;
         }
 
@@ -529,6 +552,7 @@ public class FlatpakManager
 
                 if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
                 {
+                    FlatpakReference.GErrorFree(refsError);
                     continue;
                 }
 
