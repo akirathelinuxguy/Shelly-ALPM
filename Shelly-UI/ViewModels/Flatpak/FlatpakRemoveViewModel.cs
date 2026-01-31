@@ -73,7 +73,7 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
             {
                 Name = u.Name,
                 Version = u.Version,
-                IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/128x128/{u.Id}.png",
+                IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
                 Kind = u.Kind == 0
                 ? "App"
                 : "Runtime",

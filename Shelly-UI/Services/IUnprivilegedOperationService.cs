@@ -11,6 +11,8 @@ public interface IUnprivilegedOperationService
     Task<UnprivilegedOperationResult> ListFlatpakUpdates();
     
     Task<UnprivilegedOperationResult> ListAppstreamFlatpak();
+    
+    //Task<UnprivilegedOperationResult> UpdateRemoteRef();
 }
 
 public class UnprivilegedOperationResult

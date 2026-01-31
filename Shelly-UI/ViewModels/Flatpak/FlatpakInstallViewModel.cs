@@ -13,17 +13,27 @@ using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
+using Shelly_UI.Services.LocalDatabase;
 
 namespace Shelly_UI.ViewModels.Flatpak;
 
-public class FlatpakInstallViewModel  : ConsoleEnabledViewModelBase, IRoutableViewModel
+public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
-     public IScreen HostScreen { get; }
+    public IScreen HostScreen { get; }
 
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<FlatpakModel>> _filteredPackages;
+    
+    private Database _db = new Database();
+    public ObservableCollection<FlatpakModel> Flatpaks { get; set; } = new();
+    private int _currentPage = 0;
+    private bool _isLoading = false;
+    
+    public ReactiveCommand<Unit, Unit> LoadInitialDataCommand { get; }
+    public ReactiveCommand<Unit, Unit> LoadMoreCommand { get; }
+    public ReactiveCommand<Unit, Unit> SearchCommand { get; }
+    
 
     public FlatpakInstallViewModel(IScreen screen)
     {
@@ -32,24 +42,23 @@ public class FlatpakInstallViewModel  : ConsoleEnabledViewModelBase, IRoutableVi
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
         AvailablePackages = new ObservableCollection<FlatpakModel>();
 
-        _filteredPackages = this
-            .WhenAnyValue(x => x.SearchText, x => x.AvailablePackages.Count, (s, c) => s)
-            .Throttle(TimeSpan.FromMilliseconds(250))
-            .ObserveOn(RxApp.MainThreadScheduler)
-            .Select(Search)
-            .ToProperty(this, x => x.FilteredPackages);
+        LoadInitialDataCommand = ReactiveCommand.CreateFromTask(LoadInitialDataAsync);
+        LoadMoreCommand = ReactiveCommand.CreateFromTask(LoadMoreAsync);
+        SearchCommand = ReactiveCommand.CreateFromTask(PerformSearchAsync);
 
         RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
         RemovePackageCommand = ReactiveCommand.Create<FlatpakModel>(RemovePackage);
-
-        LoadData();
+        
+        //LoadData();
     }
 
     private async Task Refresh()
     {
         try
         {
+            await new Database().AddToDatabase(AvailablePackages.ToList());
+          
         }
         catch (Exception e)
         {
@@ -57,33 +66,51 @@ public class FlatpakInstallViewModel  : ConsoleEnabledViewModelBase, IRoutableVi
         }
     }
 
-    private async void LoadData()
+    private async Task PerformSearchAsync()
     {
+        Flatpaks.Clear();
+        _currentPage = 0;
+        
+        var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText));
+        
+        foreach (var item in items)
+        {
+            Flatpaks.Add(item);
+        }
+    }
+    
+    private async Task LoadInitialDataAsync()
+    {
+        Flatpaks.Clear();
+        _currentPage = 0;
+        
+        var items = await Task.Run(() => _db.GetNextPage(_currentPage));
+        
+        foreach (var item in items)
+        {
+            Flatpaks.Add(item);
+        }
+    }
+    
+    private async Task LoadMoreAsync()
+    {
+        if (_isLoading) return;
+        
+        _isLoading = true;
+        _currentPage++;
+        
         try
         {
-            var result = await Task.Run(() => _unprivilegedOperationService.ListAppstreamFlatpak());
-            var cleanOutput = result.Output.Replace(System.Environment.NewLine, "");
-            var packages = JsonSerializer.Deserialize(cleanOutput
-                ,AppstreamJsonContext.Default.ListAppstreamApp);
+            var items = await Task.Run(() => _db.GetNextPage(_currentPage));
             
-            var models = packages.Select(u => new FlatpakModel
+            foreach (var item in items)
             {
-                Name = u.Name,
-                IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/128x128/{u.Id}.png",
-            }).ToList();
-            RxApp.MainThreadScheduler.Schedule(() =>
-            {
-                foreach (var pkg in models)
-                {
-                    AvailablePackages.Add(pkg);
-                }
-
-                this.RaisePropertyChanged(nameof(AvailablePackages));
-            });
+                Flatpaks.Add(item);
+            }
         }
-        catch (Exception e)
+        finally
         {
-            Console.WriteLine($"Failed to load installed packages for removal: {e.Message}");
+            _isLoading = false;
         }
     }
 
@@ -164,19 +191,28 @@ public class FlatpakInstallViewModel  : ConsoleEnabledViewModelBase, IRoutableVi
     public ReactiveCommand<FlatpakModel, Unit> RemovePackageCommand { get; }
 
     public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
-
-    public IEnumerable<FlatpakModel> FilteredPackages => _filteredPackages.Value;
+    
 
     public string? SearchText
     {
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
-    
+
     private void RemovePackage(FlatpakModel package)
     {
         AvailablePackages.Remove(package);
     }
 
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
+    
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            AvailablePackages?.Clear();
+            Flatpaks?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

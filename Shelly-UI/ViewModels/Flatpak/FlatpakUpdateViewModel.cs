@@ -13,6 +13,7 @@ using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
+using Shelly_UI.Services.LocalDatabase;
 
 namespace Shelly_UI.ViewModels.Flatpak;
 
@@ -68,11 +69,12 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             var packages = JsonSerializer.Deserialize(
                 cleanOutput,
                 FlatpakDtoJsonContext.Default.ListFlatpakPackageDto) ?? new List<FlatpakPackageDto>();
+            
             var models = packages.Select(u => new FlatpakModel
             {
                 Name = u.Name,
                 Version = u.Version,
-                IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/128x128/{u.Id}.png",
+                IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
                 Kind = u.Kind == 0
                 ? "App"
                 : "Runtime",

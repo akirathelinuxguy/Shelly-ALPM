@@ -28,19 +28,25 @@
                                 FontWeight="Bold"
                                 Foreground="{DynamicResource SystemBaseHighColor}"
                                 VerticalAlignment="Center" />
-                            <TextBox
-                                Grid.Column="1"
-                                Width="220"
-                                Margin="12,0"
-                                Watermark="{x:Static lang:Resources.SearchPackages}"
-                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                Background="{DynamicResource ChromeWhite}"
-                                Foreground="{DynamicResource AltMediumLow}"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                CornerRadius="4" />
+                            <TextBox Grid.Column="1"
+                                     Width="220"
+                                     Margin="12,0"
+                                     Watermark="{x:Static lang:Resources.SearchPackages}"
+                                     Text="{Binding SearchText}"
+                                     HorizontalContentAlignment="Left"
+                                     VerticalContentAlignment="Center"
+                                     Background="{DynamicResource ChromeWhite}"
+                                     Foreground="{DynamicResource AltMediumLow}"
+                                     BorderThickness="1"
+                                     BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                     CornerRadius="4">
+
+                                <TextBox.KeyBindings>
+                                    <KeyBinding
+                                        Gesture="Enter"
+                                        Command="{Binding SearchCommand}" />
+                                </TextBox.KeyBindings>
+                            </TextBox>
                             <Button
                                 Grid.Column="2"
                                 Margin="12,0,0,0"
@@ -53,45 +59,41 @@
                             </Button>
                         </Grid>
                     </Border>
-                    <ScrollViewer Grid.Row="1">
-                        <ItemsControl ItemsSource="{Binding FilteredPackages}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal" Margin="12" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
+                    <ScrollViewer Grid.Row="1"
+                                  Name="FlatpakScrollViewer">
+                        <ItemsControl ItemsSource="{Binding Flatpaks}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:FlatpakModel">
-                                    <Border Width="260"
-                                            Padding="12"
-                                            Margin="0,0,12,12"
-                                            Background="{DynamicResource ChromeWhite}"
-                                            CornerRadius="8"
-                                            BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                            BorderThickness="1"
-                                            BoxShadow="0 6 16 0 #33000000">
-                                        <StackPanel >
-                                            <Image Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
-                                                   Width="64"
-                                                   Height="64"
-                                                   Stretch="Uniform"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="0,0,0,8" />
-                                            <TextBlock  Text="{Binding Name}"
-                                                        FontWeight="Bold"
-                                            />  <TextBlock Text="{Binding Kind}"
-                                                            FontWeight="Bold"
-                                                />
-                                            <TextBlock 
+                                    <Border
+                                        Padding="12"
+                                        Margin="12,12,12,0"
+                                        Background="{DynamicResource ChromeWhite}"
+                                        CornerRadius="8"
+                                        HorizontalAlignment="Stretch"
+                                        BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                        BorderThickness="1"
+                                        BoxShadow="0 6 16 0 #33000000">
+                                        <Grid RowDefinitions="*,*,*" ColumnDefinitions="*,*,*">
+                                            <Image
+                                                Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
+                                                Width="64"
+                                                Height="64"
+                                                Stretch="Uniform"
+                                                HorizontalAlignment="Left"
+                                                Margin="0,0,0,8" />
+                                            <TextBlock Grid.Column="0" Grid.Row="1" Text="{Binding Name}"
+                                                       FontWeight="Bold" />
+                                            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Kind}"
+                                                       FontWeight="Bold" />
+                                            <TextBlock Grid.Column="2" Grid.Row="1"
                                                        Text="{Binding Version}"
-                                                       
                                                        Margin="0,4,0,0" />
-                                            <Button 
-                                                    Content="{x:Static lang:Resources.Remove}"
+                                            <Button Grid.Column="2" Grid.Row="1"
+                                                    Content="{x:Static lang:Resources.Install}"
                                                     HorizontalAlignment="Right"
                                                     Margin="0,8,0,0"
                                                     CommandParameter="{Binding}" />
-                                        </StackPanel>
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -103,7 +105,7 @@
         <customControls:ConsoleSplitControl.BottomContent>
             <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
                 <ScrollViewer>
-                <customControls:RichConsoleControl Logs="{Binding Logs}" />
+                    <customControls:RichConsoleControl Logs="{Binding Logs}" />
                 </ScrollViewer>
             </Grid>
         </customControls:ConsoleSplitControl.BottomContent>
