@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using PackageManager.Utilities;
+using static PackageManager.Alpm.AlpmReference;
 
 namespace PackageManager.Alpm;
 
