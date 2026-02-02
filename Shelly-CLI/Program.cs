@@ -160,7 +160,10 @@ public class Program
                     .WithDescription("Kill running flatpak app");
 
                 flatpak.AddCommand<FlathubSearchCommand>("search")
-                    .WithDescription("Search flatpak");
+                    .WithDescription("Search flatpak")
+                    .WithExample("flatpak", "search", "spotify")
+                    .WithExample("flatpak", "search", "spotify", "--limit", "10")
+                    .WithExample("flatpak", "search", "spotify", "--page", "2");
                 
                 flatpak.AddCommand<FlatpakSyncRemoteAppStream>("sync-remote-appstream")
                     .WithDescription("Sync remote appstream");
