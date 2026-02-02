@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -221,7 +222,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     private void HandleSelectProviderQuestion(IntPtr questionPtr)
     {
         var selectQuestion = Marshal.PtrToStructure<AlpmQuestionSelectProvider>(questionPtr);
-        
+
         // Extract the dependency name
         string? dependencyName = null;
         if (selectQuestion.Depend != IntPtr.Zero)
@@ -254,12 +255,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     }
                 }
             }
+
             currentPtr = node.Next;
         }
 
         // Build the question text
         var questionText = $"Select a provider for '{dependencyName ?? "dependency"}':";
-        
+
         Console.Error.WriteLine($"[ALPM_QUESTION] {questionText}");
         for (int i = 0; i < providerOptions.Count; i++)
         {
@@ -267,14 +269,14 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
 
         var args = new AlpmQuestionEventArgs(
-            AlpmQuestionType.SelectProvider, 
-            questionText, 
-            providerOptions, 
+            AlpmQuestionType.SelectProvider,
+            questionText,
+            providerOptions,
             dependencyName);
-        
+
         // Default to first provider (index 0) if no handler responds
         args.Response = 0;
-        
+
         Question?.Invoke(this, args);
 
         Console.Error.WriteLine($"[ALPM_QUESTION] Selected provider index: {args.Response}");
@@ -499,13 +501,36 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             {
                 /* Ignore cleanup errors */
             }
-
-            return -1;
         }
         finally
         {
             client?.Dispose();
             handler?.Dispose();
+        }
+
+        try
+        {
+            // We've fallen out of the custom downloader attempt to use curl
+            if (!string.IsNullOrEmpty(_config.TransferCommand))
+            {
+                // Replace placeholders: %o = output file, %u = URL
+                var command = _config.TransferCommand
+                    .Replace("%o", localpath)
+                    .Replace("%u", fullUrl);
+
+                // Execute external command
+                var process = Process.Start("/bin/sh", $"-c \"{command}\"");
+                process.WaitForExit();
+                return process.ExitCode == 0 ? 0 : -1;
+            }
+
+            Console.Error.WriteLine($"[DEBUG_LOG] Failed to download {fullUrl}: curl not available");
+            return -1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[DEBUG_LOG] Failed to execute custom transfer command: {ex.Message}");
+            return -1;
         }
     }
 
