@@ -13,4 +13,8 @@ public class InstallPackageSettings : PackageSettings
     [CommandOption("-m | --make-deps")]
     [Description("Install make dependencies only for the specified packages")]
     public bool MakeDepsOn { get; set; } 
+    
+    [CommandOption("-d|--no-deps")]
+    [Description("Install package without checking/installing dependencies")]
+    public bool NoDeps { get; set; }
 }

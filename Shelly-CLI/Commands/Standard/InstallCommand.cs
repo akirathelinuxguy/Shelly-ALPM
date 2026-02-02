@@ -102,6 +102,14 @@ public class InstallCommand : Command<InstallPackageSettings>
             return 0;
         }
 
+        if (settings.NoDeps)
+        {
+            AnsiConsole.MarkupLine("[yellow]Skipping dependency installation.[/]");
+            AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
+            manager.InstallPackages(packageList, AlpmTransFlag.NoDeps);
+            return 0;
+        }
+
         AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
         manager.InstallPackages(packageList);
 
