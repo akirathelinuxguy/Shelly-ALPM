@@ -50,13 +50,9 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
         try
         {
             var result = await Task.Run(() => _unprivilegedOperationService.ListFlatpakUpdates());
-            Console.WriteLine($@"[DEBUG_LOG] Loaded {result.Output.Length} installed packages");
-            var cleanOutput = result.Output.Replace(System.Environment.NewLine, "");
-            var packages = JsonSerializer.Deserialize(
-                cleanOutput,
-                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto) ?? new List<FlatpakPackageDto>();
+            Console.WriteLine($@"[DEBUG_LOG] Loaded {result.Count} installed packages");
 
-            var models = packages.Select(u => new FlatpakModel
+            var models = result.Select(u => new FlatpakModel
             {
                 Name = u.Name,
                 Version = u.Version,

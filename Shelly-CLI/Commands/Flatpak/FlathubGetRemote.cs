@@ -7,11 +7,14 @@ namespace Shelly_CLI.Commands.Flatpak;
 
 public class FlathubGetRemote : Command<DefaultSettings>
 {
-    public override int Execute([NotNull] CommandContext context,[NotNull] DefaultSettings settings)
+    public override int Execute([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
     {
         var result = new FlatpakManager().GetAvailableAppsFromAppstreamJson("flathub");
-        
-        AnsiConsole.MarkupLine(result.EscapeMarkup());
+
+        using var stdout = Console.OpenStandardOutput();
+        using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+        writer.WriteLine(result);
+        writer.Flush();
         return 0;
     }
 }

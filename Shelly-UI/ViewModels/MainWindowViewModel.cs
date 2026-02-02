@@ -35,6 +35,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)", RegexOptions.Compiled);
 
     private static readonly Regex LogPercentagePattern = new(@"([^:\s\[\]]+): \d+% -> (\d+)%", RegexOptions.Compiled);
+    
+    private static readonly Regex FlatpakProgressPattern =
+        new(@"\[DEBUG_LOG\]\s*Progress:\s*(\d+)%\s*-\s*Downloading:\s*([\d.]+)\s*(\w+)/([\d.]+)\s*(\w+)", RegexOptions.Compiled);
 
     public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
         IServiceProvider services,
@@ -280,6 +283,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             {
                 var matchAlpm = AlpmProgressPattern.Match(log);
                 var matchFormatted = LogPercentagePattern.Match(log);
+                var matchFlatpak = FlatpakProgressPattern.Match(log);
 
                 if (matchAlpm.Success)
                 {
@@ -300,6 +304,16 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                         GlobalProgressValue = percent;
                         GlobalProgressText = $"{percent}%";
                         GlobalBusyMessage = $"{action} {pkg}...";
+                    }
+                }
+                else if (matchFlatpak.Success)
+                {
+                    if (int.TryParse(matchFlatpak.Groups[1].Value, out var percent))
+                    {
+                        var status = matchFlatpak.Groups[2].Value.Trim();
+                        GlobalProgressValue = percent;
+                        GlobalProgressText = $"{percent}%";
+                        GlobalBusyMessage = "Installing";
                     }
                 }
                 else if (matchFormatted.Success)
@@ -332,7 +346,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             this.RaisePropertyChanged(nameof(IsFlatpakEnabled));
             return;
         }
-        
+
         IsAurEnabled = !IsAurEnabled;
         if (IsAurOpen)
         {

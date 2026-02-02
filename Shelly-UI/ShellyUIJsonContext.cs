@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
+using PackageManager.Flatpak;
 using Shelly_UI.Models;
 
 namespace Shelly_UI;

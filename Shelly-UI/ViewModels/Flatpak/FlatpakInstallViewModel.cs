@@ -63,13 +63,9 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
     {
         try
         {
-            var avaliable = await _unprivilegedOperationService.ListAppstreamFlatpak();
-            var cleanOutput = avaliable.Output.Replace(System.Environment.NewLine, "");
-            var packages = JsonSerializer.Deserialize(
-                cleanOutput,
-                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto) ?? new List<FlatpakPackageDto>();
+            var available = await _unprivilegedOperationService.ListAppstreamFlatpak();
 
-            var models = packages.Select(u => new FlatpakModel
+            var models = available.Select(u => new FlatpakModel
             {
                 Name = u.Name,
                 Version = u.Version,

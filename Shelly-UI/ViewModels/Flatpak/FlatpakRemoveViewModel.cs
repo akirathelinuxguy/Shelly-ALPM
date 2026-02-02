@@ -25,7 +25,7 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
     private List<FlatpakModel> _avaliablePackages = new();
-    
+
     private string? _searchText;
 
     public FlatpakRemoveViewModel(IScreen screen)
@@ -34,18 +34,18 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
 
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
         AvailablePackages = new ObservableCollection<FlatpakModel>();
-        
+
         this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(_ => ApplyFilter());
-        
+
         RefreshCommand = ReactiveCommand.Create(LoadData);
         RemovePackageCommand = ReactiveCommand.CreateFromTask<FlatpakModel>(RemovePackage);
 
         LoadData();
     }
-    
+
     private void ApplyFilter()
     {
         var filtered = string.IsNullOrWhiteSpace(SearchText)
@@ -55,13 +55,13 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
                 p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         AvailablePackages.Clear();
-        
+
         foreach (var package in filtered)
         {
             AvailablePackages.Add(package);
         }
     }
-    
+
     private async void LoadData()
     {
         _avaliablePackages.Clear();
@@ -69,33 +69,29 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
         try
         {
             var result = await Task.Run(() => _unprivilegedOperationService.ListFlatpakPackages());
-            var cleanOutput = result.Output.Replace(System.Environment.NewLine, "");
-            var packages = JsonSerializer.Deserialize(
-                cleanOutput,
-                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto) ?? new List<FlatpakPackageDto>();
-            var models = packages.Select(u => new FlatpakModel
+
+            var models = result.Select(u => new FlatpakModel
             {
                 Name = u.Name,
                 Version = u.Version,
                 Id = u.Id,
                 IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
                 Kind = u.Kind == 0
-                ? "App"
-                : "Runtime",
+                    ? "App"
+                    : "Runtime",
             }).ToList();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 _avaliablePackages = models;
                 ApplyFilter();
             });
-            
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to load installed packages for removal: {e.Message}");
         }
     }
-    
+
     private bool _showConfirmDialog;
 
     public bool ShowConfirmDialog
@@ -115,14 +111,14 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
 
         try
         {
-            // Set busy
+            /*// Set busy
             if (mainWindow != null)
             {
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
                 mainWindow.GlobalBusyMessage = "Removing selected package...";
-            }
+            }*/
 
             //do work
 
@@ -147,19 +143,19 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
     public System.Reactive.Unit Unit => System.Reactive.Unit.Default;
-    
+
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
     public ReactiveCommand<FlatpakModel, Unit> RemovePackageCommand { get; }
 
     public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
-    
+
 
     public string? SearchText
     {
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
-    
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -167,6 +163,7 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
             AvailablePackages?.Clear();
             _avaliablePackages?.Clear();
         }
+
         base.Dispose(disposing);
     }
 }

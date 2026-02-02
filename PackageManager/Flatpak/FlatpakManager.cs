@@ -41,7 +41,7 @@ public class FlatpakManager
 
                 if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
                 {
-                    FlatpakReference.GErrorFree( refsError);
+                    FlatpakReference.GErrorFree(refsError);
                     FlatpakReference.GObjectUnref(installationPtr);
                     continue;
                 }
@@ -69,7 +69,6 @@ public class FlatpakManager
         finally
         {
             FlatpakReference.GPtrArrayUnref(installationsPtr);
-           
         }
 
         return packages;
@@ -135,7 +134,7 @@ public class FlatpakManager
 
         if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
         {
-            FlatpakReference.GErrorFree( refsError);
+            FlatpakReference.GErrorFree(refsError);
             FlatpakReference.GObjectUnref(installationPtr);
             return null;
         }
@@ -299,6 +298,12 @@ public class FlatpakManager
 
             try
             {
+                // Connect to new-operation signal to hook progress callbacks
+                var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
+                var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
+                FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
+                    IntPtr.Zero, IntPtr.Zero, 0);
+
                 var addSuccess = FlatpakReference.TransactionAddInstall(
                     transactionPtr, remote, refString, IntPtr.Zero, out IntPtr addError);
 
@@ -406,6 +411,12 @@ public class FlatpakManager
 
                 try
                 {
+                    // Connect to new-operation signal to hook progress callbacks
+                    var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
+                    var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
+                    FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
+                        IntPtr.Zero, IntPtr.Zero, 0);
+
                     var addSuccess = FlatpakReference.TransactionAddUninstall(
                         transactionPtr, refString, out IntPtr addError);
 
@@ -479,6 +490,12 @@ public class FlatpakManager
 
                 try
                 {
+                    // Connect to new-operation signal to hook progress callbacks
+                    var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
+                    var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
+                    FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
+                        IntPtr.Zero, IntPtr.Zero, 0);
+
                     var addSuccess = FlatpakReference.TransactionAddUpdate(
                         transactionPtr, refString, IntPtr.Zero, null, out IntPtr addError);
 
@@ -671,7 +688,7 @@ public class FlatpakManager
             {
                 return new List<AppstreamApp>();
             }
-            
+
             var parser = new AppstreamParser();
             return parser.ParseFile(appstreamPath);
         }
@@ -679,9 +696,10 @@ public class FlatpakManager
         {
             Console.Error.WriteLine($"Failed to parse appstream: {e}");
         }
+
         return new List<AppstreamApp>();
     }
-    
+
     /// <summary>
     /// Gets all available apps from appstream and serializes to JSON (AOT-compatible)
     /// </summary>
@@ -766,5 +784,69 @@ public class FlatpakManager
             : "runtime";
 
         return $"{kindString}/{package.Id}/{package.Arch}/{package.Branch}";
+    }
+
+    /// <summary>
+    /// Callback for when a new operation is started in a transaction.
+    /// </summary>
+    private static void OnNewOperation(IntPtr transaction, IntPtr operation, IntPtr progress, IntPtr userData)
+    {
+        try
+        {
+            if (progress == IntPtr.Zero)
+            {
+                return;
+            }
+
+            // Set update frequency to get more frequent updates (in milliseconds)
+            FlatpakReference.TransactionProgressSetUpdateFrequency(progress, 50);
+
+            // Get initial progress info
+            var percentage = FlatpakReference.TransactionProgressGetProgress(progress);
+            var isEstimating = FlatpakReference.TransactionProgressGetIsEstimating(progress);
+            var statusPtr = FlatpakReference.TransactionProgressGetStatus(progress);
+            var status = PtrToStringSafe(statusPtr) ?? "";
+
+            if (isEstimating)
+            {
+                Console.Error.WriteLine($"[DEBUG_LOG]Progress: Estimating... {status}");
+            }
+            else
+            {
+                Console.Error.WriteLine($"[DEBUG_LOG]Progress: {percentage}% - {status}");
+            }
+
+            // Connect to the progress changed signal for this specific operation
+            var progressCallback = new FlatpakReference.TransactionProgressCallback(OnOperationProgress);
+            var progressCallbackPtr = Marshal.GetFunctionPointerForDelegate(progressCallback);
+            FlatpakReference.GSignalConnectData(progress, "changed", progressCallbackPtr,
+                IntPtr.Zero, IntPtr.Zero, 0);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Error in new operation callback: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Callback for operation progress updates.
+    /// </summary>
+    private static void OnOperationProgress(IntPtr progress, IntPtr userData1, IntPtr userData2)
+    {
+        if (progress == IntPtr.Zero) return;
+
+        var percentage = FlatpakReference.TransactionProgressGetProgress(progress);
+        var isEstimating = FlatpakReference.TransactionProgressGetIsEstimating(progress);
+        var statusPtr = FlatpakReference.TransactionProgressGetStatus(progress);
+        var status = PtrToStringSafe(statusPtr) ?? "";
+
+        if (isEstimating)
+        {
+            Console.Error.Write($"[Shelly][DEBUG_LOG]Progress: Estimating... {status}\n");
+        }
+        else
+        {
+            Console.Error.Write($"[Shelly][DEBUG_LOG]Progress: {percentage}% - {status}\n");
+        }
     }
 }

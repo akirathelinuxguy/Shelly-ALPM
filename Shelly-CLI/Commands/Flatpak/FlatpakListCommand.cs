@@ -18,7 +18,10 @@ public class FlatpakListCommand : Command<DefaultSettings>
         if (settings.JsonOutput)
         {
             var json = JsonSerializer.Serialize(packages, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
-            AnsiConsole.MarkupLine(json.EscapeMarkup());
+            using var stdout = Console.OpenStandardOutput();
+            using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+            writer.WriteLine(json);
+            writer.Flush();
             return 0;
         }
         

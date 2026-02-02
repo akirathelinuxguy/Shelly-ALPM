@@ -1,16 +1,18 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PackageManager.Flatpak;
+using Shelly_UI.Models;
 
 namespace Shelly_UI.Services;
 
 public interface IUnprivilegedOperationService
 {
     Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages);
-    Task<UnprivilegedOperationResult> ListFlatpakPackages();
+    Task<List<FlatpakPackageDto>> ListFlatpakPackages();
 
-    Task<UnprivilegedOperationResult> ListFlatpakUpdates();
+    Task<List<FlatpakPackageDto>> ListFlatpakUpdates();
 
-    Task<UnprivilegedOperationResult> ListAppstreamFlatpak();
+    Task<List<FlatpakPackageDto>> ListAppstreamFlatpak();
 
     Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package);
     

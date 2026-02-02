@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using PackageManager.Flatpak;
+using Shelly_UI.Models;
 using Shelly_UI.Views;
 using Shelly.Utilities.System;
 
@@ -61,14 +63,68 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
         return "shelly";
     }
 
-    public async Task<UnprivilegedOperationResult> ListFlatpakPackages()
+    public async Task<List<FlatpakPackageDto>> ListFlatpakPackages()
     {
-        return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list", "--json");
+        var result = await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                    return updates ?? [];
+                }
+            }
+            
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+            return allUpdates ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
+            return [];
+        }
     }
 
-    public async Task<UnprivilegedOperationResult> ListFlatpakUpdates()
+    public async Task<List<FlatpakPackageDto>> ListFlatpakUpdates()
     {
-        return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates", "--json");
+        var result = await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                    return updates ?? [];
+                }
+            }
+            
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+            return allUpdates ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
+            return [];
+        }
     }
 
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages)
@@ -77,9 +133,36 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
         return await ExecuteUnprivilegedCommandAsync("Remove packages", "flatpak remove", packageArgs);
     }
 
-    public async Task<UnprivilegedOperationResult> ListAppstreamFlatpak()
+    public async Task<List<FlatpakPackageDto>> ListAppstreamFlatpak()
     {
-        return await ExecuteUnprivilegedCommandAsync("Get local appstream", "flatpak get-remote-appstream", "--json");
+        var result = await ExecuteUnprivilegedCommandAsync("Get local appstream", "flatpak get-remote-appstream", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                    return updates ?? [];
+                }
+            }
+            
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+            return allUpdates ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
+            return [];
+        }
     }
 
     public async Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package)
@@ -205,5 +288,14 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
                 ExitCode = -1
             };
         }
+    }
+    
+    private static string StripBom(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+        
+        // UTF-8 BOM is 0xEF 0xBB 0xBF which appears as \uFEFF in .NET strings
+        return input.TrimStart('\uFEFF');
     }
 }
