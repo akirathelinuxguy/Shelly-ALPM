@@ -219,8 +219,7 @@ public class AurPackageManager(string? configPath = null)
             depsToConsider = depsToConsider.Concat(makeDepends).Distinct().ToList();
         }
 
-        var installedPackages = _alpm.GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
-        var depsToInstall = depsToConsider.Where(x => !IsDependencySatisfied(x, installedPackages)).ToList();
+        var depsToInstall = depsToConsider.Where(x => !_alpm.IsDependencySatisfiedByInstalled(x)).ToList();
 
         if (depsToInstall.Count == 0)
         {
@@ -244,23 +243,24 @@ public class AurPackageManager(string? configPath = null)
             Message = $"Installing dependencies: {string.Join(", ", depsToInstall)}"
         });
 
-        foreach (var dep in depsToInstall)
+        try
         {
-            try
-            {
-                _alpm.InstallPackages(depsToInstall);
-                break; // If successful, all deps are installed
-            }
-            catch (Exception)
+            _alpm.InstallPackages(depsToInstall);
+        }
+        catch (Exception)
+        {
+            // Fall back to installing one by one
+            foreach (var dep in depsToInstall)
             {
                 try
                 {
                     var pkgName = _alpm.GetPackageNameFromProvides(dep);
-                    _alpm.InstallPackage(pkgName);
+                    if (!string.IsNullOrEmpty(pkgName))
+                        _alpm.InstallPackage(pkgName);
                 }
                 catch (Exception ex2)
                 {
-                    Console.Error.WriteLine("Failed to install dependency: " + ex2.Message);
+                    Console.Error.WriteLine($"[Shelly] Failed to install dependency {dep}: {ex2.Message}");
                 }
             }
         }
@@ -321,9 +321,8 @@ public class AurPackageManager(string? configPath = null)
             var depends = pkgbuildInfo.Depends.Select(x => x.Trim()).ToList();
             var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
             var allDeps = depends.Concat(makeDepends).Distinct().ToList();
-            var installedPackages = _alpm.GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
-            var depsToInstall = allDeps.Where(x => !IsDependencySatisfied(x, installedPackages)).ToList();
-            foreach (var dep in depsToInstall)
+            var depsToInstall = allDeps.Where(x => !_alpm.IsDependencySatisfiedByInstalled(x)).ToList();
+            if (depsToInstall.Count > 0)
             {
                 try
                 {
@@ -331,14 +330,19 @@ public class AurPackageManager(string? configPath = null)
                 }
                 catch (Exception)
                 {
-                    try
+                    // Fall back to installing one by one
+                    foreach (var dep in depsToInstall)
                     {
-                        var pkgName = _alpm.GetPackageNameFromProvides(dep);
-                        _alpm.InstallPackage(pkgName);
-                    }
-                    catch (Exception ex2)
-                    {
-                        Console.Error.WriteLine("Failed to install dependency: " + ex2.Message + "");
+                        try
+                        {
+                            var pkgName = _alpm.GetPackageNameFromProvides(dep);
+                            if (!string.IsNullOrEmpty(pkgName))
+                                _alpm.InstallPackage(pkgName);
+                        }
+                        catch (Exception ex2)
+                        {
+                            Console.Error.WriteLine($"[Shelly] Failed to install dependency {dep}: {ex2.Message}");
+                        }
                     }
                 }
             }
@@ -375,7 +379,21 @@ public class AurPackageManager(string? configPath = null)
                     CreateNoWindow = true,
                 }
             };
+            buildProcess.OutputDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
+            };
+
+            buildProcess.ErrorDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    Console.Error.WriteLine($"[Shelly] makepkg error: {e.Data}");
+            };
+
             buildProcess.Start();
+            buildProcess.BeginOutputReadLine();
+            buildProcess.BeginErrorReadLine();
             await buildProcess.WaitForExitAsync();
 
             if (buildProcess.ExitCode != 0)
@@ -524,14 +542,13 @@ public class AurPackageManager(string? configPath = null)
         var depends = pkgbuildInfo.Depends.Select(x => x.Trim()).ToList();
         var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
         var allDeps = depends.Concat(makeDepends).Distinct().ToList();
-        var installedPackages = _alpm.GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
-        var depsToInstall = allDeps.Where(x => !IsDependencySatisfied(x, installedPackages)).ToList();
+        var depsToInstall = allDeps.Where(x => !_alpm.IsDependencySatisfiedByInstalled(x)).ToList();
 
         foreach (var dep in depsToInstall)
         {
             try
             {
-                _alpm.InstallPackages(depsToInstall);
+                _alpm.InstallPackage(dep);
             }
             catch (Exception)
             {
@@ -560,8 +577,22 @@ public class AurPackageManager(string? configPath = null)
                 CreateNoWindow = true,
             }
         };
+        buildProcess.OutputDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+                Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
+        };
+
+        buildProcess.ErrorDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+                Console.Error.WriteLine($"[Shelly] makepkg error: {e.Data}");
+        };
         buildProcess.Start();
+        buildProcess.BeginOutputReadLine();
+        buildProcess.BeginErrorReadLine();
         await buildProcess.WaitForExitAsync();
+
 
         if (buildProcess.ExitCode != 0)
         {

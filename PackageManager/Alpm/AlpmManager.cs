@@ -1136,6 +1136,15 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         return string.Empty;
     }
 
+    public bool IsDependencySatisfiedByInstalled(string dependency)
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+        var localDbPtr = GetLocalDb(_handle);
+        var pkgCache = DbGetPkgCache(localDbPtr);
+        var pkgPtr = PkgFindSatisfier(pkgCache, dependency);
+        return pkgPtr != IntPtr.Zero;
+    }
+
     public void InstallDependenciesOnly(string packageName,
         bool includeMakeDeps = false,
         AlpmTransFlag flags = AlpmTransFlag.None)
