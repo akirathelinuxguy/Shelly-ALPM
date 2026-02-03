@@ -8,6 +8,7 @@
              xmlns:vm="clr-namespace:Shelly_UI.ViewModels.Flatpak"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="clr-namespace:Shelly_UI.Models"
+             xmlns:enums="clr-namespace:Shelly_UI.Enums"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:FlatpakInstallViewModel"
              x:Class="Shelly_UI.Views.Flatpak.FlatpakInstallWindow">
@@ -28,6 +29,11 @@
                                 FontWeight="Bold"
                                 Foreground="{DynamicResource SystemBaseHighColor}"
                                 VerticalAlignment="Center" />
+                            <ComboBox
+                                HorizontalAlignment="Stretch" SelectedIndex="0"
+                                ItemsSource="{Binding FlatpakCategories}"
+                                SelectedItem="{Binding CategoryEnum}">
+                            </ComboBox>
                             <TextBox Grid.Column="1"
                                      Width="220"
                                      Margin="12,0"
@@ -107,9 +113,10 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"  IsVisible="{Binding LoadingData}">
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding LoadingData}">
                         <ProgressBar Grid.Row="0" IsIndeterminate="True"
-                                    
+
                                      Width="50"
                                      Height="50" />
                         <TextBlock Text="Loading flatpak information this may take a moment on first load."></TextBlock>

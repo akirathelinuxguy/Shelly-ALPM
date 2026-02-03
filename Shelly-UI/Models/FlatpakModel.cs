@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using LiteDB;
 
 namespace Shelly_UI.Models;
@@ -15,4 +16,5 @@ public class FlatpakModel
     public string IconPath { get; set; } = string.Empty;
     public string Kind { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public List<string> Categories { get; set; } = [];
 }
