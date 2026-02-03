@@ -70,7 +70,13 @@ sealed class Program
         {
             // Force Wayland backend, no X11 fallback
             return builder
-                .UseSkia()
+                .With(new X11PlatformOptions()
+                {
+                    EnableIme = true,
+                    EnableMultiTouch = true,
+                    UseDBusMenu = true,
+                    UseDBusFilePicker = true
+                })
                 .With(new AvaloniaNativePlatformOptions())
                 .UsePlatformDetect(); // Will now prefer Wayland
         }
