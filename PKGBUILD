@@ -1,9 +1,9 @@
 # Maintainer: Zoey Bauer <zoey.erin.bauer@gmail.com>
 # Maintainer: Caroline Snyder
 pkgname=shelly
-pkgver=1.4.0
+pkgver=1.4.1
 pkgrel=1
-pkgdesc="Shelly an alternative to pacman implemented on top of libalpm directly"
+pkgdesc="Shelly: A Modern Arch Package Manager"
 arch=('x86_64')
 url="https://github.com/ZoeyErinBauer/Shelly-ALPM"
 license=('GPL-2.0-only')

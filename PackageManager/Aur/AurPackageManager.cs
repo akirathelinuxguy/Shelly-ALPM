@@ -80,7 +80,9 @@ public class AurPackageManager(string? configPath = null)
         var suggestByBaseNameResponse = await _aurSearchManager.SuggestByPackageBaseNamesAsync(query);
         //this might fail if AUR is down.
         return searchResponse.Results.Concat(suggestResponse.Results)
-            .Concat(suggestByBaseNameResponse.Results).ToList();
+            .Concat(suggestByBaseNameResponse.Results)
+            .DistinctBy(x => x.Name)
+            .ToList();
     }
 
     public async Task<List<AurUpdateDto>> GetPackagesNeedingUpdate()
