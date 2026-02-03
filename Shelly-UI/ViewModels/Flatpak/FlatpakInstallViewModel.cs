@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using PackageManager.Flatpak;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
@@ -116,7 +113,8 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         Flatpaks.Clear();
         _currentPage = 0;
 
-        var items = await Task.Run(() => _db.GetNextPage(_currentPage));
+        var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
+        var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
 
         foreach (var item in items)
         {
@@ -130,13 +128,12 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
 
         _isLoading = true;
         _currentPage++;
-
         try
         {
             var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
             var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
-
-            if (items.Any())
+          
+            if (items.Count != 0)
             {
                 foreach (var item in items)
                 {

@@ -49,6 +49,7 @@
                     <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
                         <ColorPicker Grid.Column="0" Color="{Binding AccentHex, Mode=TwoWay}" />
                         <Button Grid.Column="1" Content="{x:Static lang:Resources.ApplyAccent}"
+                                IsEnabled="{Binding !UseKdeColor}"
                                 HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 Margin="20,0"
@@ -58,12 +59,15 @@
                                 Foreground="{DynamicResource SystemBaseHighColor}" />
                     </Grid>
                     <ToggleSwitch Content="Toggle Dark/Light Mode"
+                                  IsEnabled="{Binding !UseKdeColor}"
                                   IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
                     <TextBlock Text="Default Page on startup" FontSize="14"  />
                     <ComboBox
                         ItemsSource="{Binding DefaultViews}"
                         SelectedItem="{Binding DefaultScreenEnum}"
                         Width="200" />
+                    <ToggleSwitch Content="Sync to KDE Theme"
+                                  IsChecked="{Binding UseKdeColor, Mode=TwoWay}" />
                 </StackPanel>
             </TabItem>
         </TabControl>
