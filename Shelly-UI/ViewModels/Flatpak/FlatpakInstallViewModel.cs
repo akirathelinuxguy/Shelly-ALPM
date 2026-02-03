@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using PackageManager.Flatpak;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
+using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
 using Shelly_UI.Services.LocalDatabase;
@@ -48,6 +46,11 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         InstallPackagesCommand = ReactiveCommand.CreateFromTask<FlatpakModel>(InstallPackage);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
 
+        this.WhenAnyValue(x => x.CategoryEnum)
+            .Throttle(TimeSpan.FromMilliseconds(250))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(_ => PerformSearchAsync());
+        
         if (!_db.CollectionExists("flatpaks"))
         {
             Refresh();
@@ -72,6 +75,7 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
                 Summary = u.Summary,
                 IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
                 Id = u.Id,
+                Categories = u.Categories,
                 Kind = u.Kind == 0
                     ? "App"
                     : "Runtime",
@@ -95,7 +99,8 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         Flatpaks.Clear();
         _currentPage = 0;
 
-        var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText));
+        var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
+        var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
 
         foreach (var item in items)
         {
@@ -108,7 +113,8 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         Flatpaks.Clear();
         _currentPage = 0;
 
-        var items = await Task.Run(() => _db.GetNextPage(_currentPage));
+        var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
+        var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
 
         foreach (var item in items)
         {
@@ -122,14 +128,13 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
 
         _isLoading = true;
         _currentPage++;
-
         try
         {
-            var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText));
-
-            if (items.Any())
+            var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
+            var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
+          
+            if (items.Count != 0)
             {
-
                 foreach (var item in items)
                 {
                     Flatpaks.Add(item);
@@ -142,16 +147,15 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         }
     }
 
-    private IEnumerable<FlatpakModel> Search(string? searchText)
-    {
-        if (string.IsNullOrWhiteSpace(searchText))
-        {
-            return AvailablePackages;
-        }
+    public IEnumerable<FlatpakCategories> FlatpakCategories { get; } =
+        Enum.GetValues<FlatpakCategories>();
 
-        return AvailablePackages.Where(p =>
-            p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            p.Version.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+    private FlatpakCategories _categoryEnum;
+
+    public FlatpakCategories CategoryEnum
+    {
+        get => _categoryEnum;
+        set { this.RaiseAndSetIfChanged(ref _categoryEnum, value); }
     }
 
     private bool _loadingData;
@@ -161,7 +165,7 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         get => _loadingData;
         set => this.RaiseAndSetIfChanged(ref _loadingData, value);
     }
-    
+
 
     public async Task InstallPackage(FlatpakModel package)
     {
@@ -219,6 +223,7 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         {
             AvailablePackages?.Clear();
             Flatpaks?.Clear();
+            _db = new Database();
         }
 
         base.Dispose(disposing);

@@ -50,7 +50,7 @@ public class Database
         return results;
     }
 
-    public List<FlatpakModel> GetNextPage(int pageNumber, string? searchTerm = null)
+    public List<FlatpakModel> GetNextPage(int pageNumber, string? searchTerm = null, string? searchCategory = null)
     {
         using (var db = new LiteDatabase(dbFolder))
         {
@@ -63,6 +63,11 @@ public class Database
             {
                 query = query.Where(x => x.Name.Contains(searchTerm) ||
                                          x.Summary.Contains(searchTerm));
+            }
+            
+            if (!string.IsNullOrWhiteSpace(searchCategory))
+            {
+                query = query.Where(x => x.Categories.Contains(searchCategory));
             }
 
             return query
@@ -79,6 +84,7 @@ public class Database
         {
             var col = db.GetCollection<FlatpakModel>("flatpaks");
             col.EnsureIndex(x => x.Name);
+            col.EnsureIndex(x => x.Categories);
         }
         return Task.CompletedTask;
     }

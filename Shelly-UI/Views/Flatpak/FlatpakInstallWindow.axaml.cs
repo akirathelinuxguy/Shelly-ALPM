@@ -21,10 +21,10 @@ public partial class FlatpakInstallWindow : ReactiveUserControl<FlatpakInstallVi
         AvaloniaXamlLoader.Load(this);
         this.WhenActivated(disposables =>
         {
-            // Bind scroll detection
             this.FindControl<ScrollViewer>("FlatpakScrollViewer")
                 ?.GetObservable(ScrollViewer.OffsetProperty)
                 .Throttle(TimeSpan.FromMilliseconds(100))
+                .Skip(1)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(offset =>
                 {
