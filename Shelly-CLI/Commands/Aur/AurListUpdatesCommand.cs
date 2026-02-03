@@ -6,9 +6,9 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurListUpdatesCommand : AsyncCommand<DefaultSettings>
+public class AurListUpdatesCommand : AsyncCommand<ListSettings>
 {
-    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ListSettings settings)
     {
         AurPackageManager? manager = null;
         try
@@ -18,9 +18,31 @@ public class AurListUpdatesCommand : AsyncCommand<DefaultSettings>
 
             var updates = manager.GetPackagesNeedingUpdate().GetAwaiter().GetResult();
 
+            // Apply filter if specified
+            if (!string.IsNullOrWhiteSpace(settings.Filter))
+            {
+                updates = updates.Where(p => p.Name.Contains(settings.Filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Apply sorting based on settings
+            // Note: Popularity sorts by name as there is no popularity data available for AUR updates
+            var sortedUpdates = settings.Sort switch
+            {
+                SortOption.Size => settings.Order == SortDirection.Ascending
+                    ? updates.OrderBy(p => p.DownloadSize)
+                    : updates.OrderByDescending(p => p.DownloadSize),
+                SortOption.Popularity => settings.Order == SortDirection.Ascending
+                    ? updates.OrderBy(p => p.Name)
+                    : updates.OrderByDescending(p => p.Name),
+                _ => settings.Order == SortDirection.Ascending
+                    ? updates.OrderBy(p => p.Name)
+                    : updates.OrderByDescending(p => p.Name)
+            };
+
             if (settings.JsonOutput)
             {
-                var json = JsonSerializer.Serialize(updates, ShellyCLIJsonContext.Default.ListAurUpdateDto);
+                var sortedList = sortedUpdates.ToList();
+                var json = JsonSerializer.Serialize(sortedList, ShellyCLIJsonContext.Default.ListAurUpdateDto);
                 await using var stdout = System.Console.OpenStandardOutput();
                 await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
                 await writer.WriteLineAsync(json);
@@ -40,7 +62,7 @@ public class AurListUpdatesCommand : AsyncCommand<DefaultSettings>
             table.AddColumn("Available");
             table.AddColumn("Description");
 
-            foreach (var pkg in updates.OrderBy(p => p.Name))
+            foreach (var pkg in sortedUpdates)
             {
                 table.AddRow(
                     pkg.Name.EscapeMarkup(),

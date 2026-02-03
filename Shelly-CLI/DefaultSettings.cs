@@ -9,7 +9,7 @@ public class DefaultSettings : CommandSettings
     [Description("Output results in JSON format for UI integration and scripting")]
     public bool JsonOutput { get; set; }
 
-    [CommandOption("-s|--sync")]
+    [CommandOption("-y|--sync")]
     [Description("Synchronize package databases before performing the operation")]
     public bool Sync { get; set; }
 }

@@ -62,11 +62,19 @@ public class Program
 
             config.AddCommand<ListInstalledCommand>("list-installed")
                 .WithDescription("List all installed packages")
-                .WithExample("list-installed");
+                .WithExample("list-installed")
+                .WithExample("list-installed", "--sort", "name")
+                .WithExample("list-installed", "--sort", "size")
+                .WithExample("list-installed", "--sort", "size", "--order", "desc")
+                .WithExample("list-installed", "--filter", "linux");
 
             config.AddCommand<ListAvailableCommand>("list-available")
                 .WithDescription("List all available packages")
-                .WithExample("list-available");
+                .WithExample("list-available")
+                .WithExample("list-available", "--sort", "name")
+                .WithExample("list-available", "--sort", "size")
+                .WithExample("list-available", "--sort", "size", "--order", "desc")
+                .WithExample("list-available", "--filter", "firefox");
 
             config.AddCommand<ListUpdatesCommand>("list-updates")
                 .WithDescription("List packages that need updates")
@@ -76,7 +84,15 @@ public class Program
                 .WithDescription("Install one or more packages")
                 .WithExample("install", "firefox")
                 .WithExample("install", "firefox", "vlc", "gimp")
-                .WithExample("install", "firefox", "--no-confirm");
+                .WithExample("install", "firefox", "--no-confirm")
+                .WithExample("install", "firefox", "--build-deps")
+                .WithExample("install", "firefox", "-o")
+                .WithExample("install", "firefox", "--make-deps")
+                .WithExample("install", "firefox", "-m")
+                .WithExample("install", "firefox", "--build-deps", "--make-deps")
+                .WithExample("install", "firefox", "-o", "-m")
+                .WithExample("install", "firefox", "--no-deps")
+                .WithExample("install", "firefox", "-d");
 
             config.AddCommand<RemoveCommand>("remove")
                 .WithDescription("Remove one or more packages")
@@ -136,17 +152,31 @@ public class Program
 
                 aur.AddCommand<AurListInstalledCommand>("list-installed")
                     .WithDescription("List installed AUR packages")
-                    .WithExample("aur", "list-installed");
+                    .WithExample("aur", "list-installed")
+                    .WithExample("aur", "list-installed", "--sort", "name")
+                    .WithExample("aur", "list-installed", "--sort", "popularity")
+                    .WithExample("aur", "list-installed", "--sort", "popularity", "--order", "desc")
+                    .WithExample("aur", "list-installed", "--filter", "yay");
 
                 aur.AddCommand<AurListUpdatesCommand>("list-updates")
                     .WithDescription("List AUR packages that need updates")
-                    .WithExample("aur", "list-updates");
+                    .WithExample("aur", "list-updates")
+                    .WithExample("aur", "list-updates", "--sort", "name")
+                    .WithExample("aur", "list-updates", "--sort", "size")
+                    .WithExample("aur", "list-updates", "--sort", "size", "--order", "desc")
+                    .WithExample("aur", "list-updates", "--filter", "paru");
 
                 aur.AddCommand<AurInstallCommand>("install")
                     .WithDescription("Install AUR packages")
                     .WithExample("aur", "install", "yay")
                     .WithExample("aur", "install", "yay", "paru")
-                    .WithExample("aur", "install", "yay", "--no-confirm");
+                    .WithExample("aur", "install", "yay", "--no-confirm")
+                    .WithExample("aur", "install", "yay", "--build-deps")
+                    .WithExample("aur", "install", "yay", "-o")
+                    .WithExample("aur", "install", "yay", "--make-deps")
+                    .WithExample("aur", "install", "yay", "-m")
+                    .WithExample("aur", "install", "yay", "--build-deps", "--make-deps")
+                    .WithExample("aur", "install", "yay", "-o", "-m");
 
                 aur.AddCommand<AurInstallVersionCommand>("install-version")
                     .WithDescription("Install a specific version of an AUR package by commit hash")

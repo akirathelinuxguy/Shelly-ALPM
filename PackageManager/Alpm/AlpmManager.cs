@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using PackageManager.Utilities;
@@ -1135,6 +1136,51 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         return string.Empty;
     }
 
+    public void InstallDependenciesOnly(string packageName,
+        bool includeMakeDeps = false,
+        AlpmTransFlag flags = AlpmTransFlag.None)
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+        var syncDbsPtr = GetSyncDbs(_handle);
+        var localDbPtr = GetLocalDb(_handle);
+        var currentPtr = syncDbsPtr;
+        IntPtr pkgPtr = IntPtr.Zero;
+        while (currentPtr != IntPtr.Zero)
+        {
+            var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+            if (node.Data != IntPtr.Zero)
+            {
+                pkgPtr = AlpmReference.DbGetPkg(node.Data, packageName);
+                if (pkgPtr != IntPtr.Zero) break;
+            }
+
+            currentPtr = node.Next;
+        }
+
+        if (pkgPtr == IntPtr.Zero)
+        {
+            Console.WriteLine($"Package '{packageName}' not found");
+            return;
+        }
+
+        var dependencies = GetDependencyList(GetPkgDepends(pkgPtr));
+
+
+        if (includeMakeDeps)
+        {
+            var makeDepends = GetDependencyList(GetPkgMakeDepends(pkgPtr));
+            dependencies = dependencies.Concat(makeDepends).ToList();
+        }
+
+
+        var installedPackages = GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
+        var dependencyToInstall = dependencies.Where(x => !installedPackages.ContainsKey(x)).ToList();
+
+        if (dependencyToInstall.Count == 0) return;
+
+        InstallPackages(dependencyToInstall, flags);
+    }
+
     public void Refresh()
     {
         if (_handle != IntPtr.Zero)
@@ -1568,5 +1614,35 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             return null;
         }
+    }
+
+    private static List<string> GetDependencyList(IntPtr listPtr)
+    {
+        if (listPtr == IntPtr.Zero) return [];
+
+        var dependencies = new List<string>();
+        var currentPtr = listPtr;
+        while (currentPtr != IntPtr.Zero)
+        {
+            var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+            if (node.Data != IntPtr.Zero)
+            {
+                var depString = AlpmReference.DepComputeString(node.Data);
+                if (depString != IntPtr.Zero)
+                {
+                    var str = Marshal.PtrToStringUTF8(depString);
+                    if (!string.IsNullOrEmpty(str))
+                    {
+                        // Strip version constraints (e.g., "gcc>=10" -> "gcc")
+                        var pkgName = str.Split(new[] { '>', '<', '=' })[0];
+                        dependencies.Add(pkgName);
+                    }
+                }
+            }
+
+            currentPtr = node.Next;
+        }
+
+        return dependencies;
     }
 }

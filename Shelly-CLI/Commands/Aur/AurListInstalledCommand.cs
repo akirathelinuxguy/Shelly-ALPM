@@ -6,9 +6,9 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurListInstalledCommand : AsyncCommand<DefaultSettings>
+public class AurListInstalledCommand : AsyncCommand<ListSettings>
 {
-    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ListSettings settings)
     {
         AurPackageManager manager = null;
         try
@@ -18,9 +18,31 @@ public class AurListInstalledCommand : AsyncCommand<DefaultSettings>
 
             var packages = await manager.GetInstalledPackages();
 
+            // Apply filter if specified
+            if (!string.IsNullOrWhiteSpace(settings.Filter))
+            {
+                packages = packages.Where(p => p.Name.Contains(settings.Filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Apply sorting based on settings
+            // Note: Size sorts by name as there is no size data available for AUR packages
+            var sortedPackages = settings.Sort switch
+            {
+                SortOption.Popularity => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Popularity)
+                    : packages.OrderByDescending(p => p.Popularity),
+                SortOption.Size => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Name)
+                    : packages.OrderByDescending(p => p.Name),
+                _ => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Name)
+                    : packages.OrderByDescending(p => p.Name)
+            };
+
             if (settings.JsonOutput)
             {
-                var json = JsonSerializer.Serialize(packages, ShellyCLIJsonContext.Default.ListAurPackageDto);
+                var sortedList = sortedPackages.ToList();
+                var json = JsonSerializer.Serialize(sortedList, ShellyCLIJsonContext.Default.ListAurPackageDto);
                 using var stdout = System.Console.OpenStandardOutput();
                 using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
                 writer.WriteLine(json);
@@ -33,7 +55,7 @@ public class AurListInstalledCommand : AsyncCommand<DefaultSettings>
             table.AddColumn("Version");
             table.AddColumn("Description");
 
-            foreach (var pkg in packages.OrderBy(p => p.Name))
+            foreach (var pkg in sortedPackages)
             {
                 table.AddRow(
                     pkg.Name.EscapeMarkup(),

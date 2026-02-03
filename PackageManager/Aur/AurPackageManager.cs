@@ -51,11 +51,15 @@ public class AurPackageManager(string? configPath = null)
 
     public event EventHandler<PackageProgressEventArgs>? PackageProgress;
     public event EventHandler<PkgbuildDiffRequestEventArgs>? PkgbuildDiffRequest;
+    public event EventHandler<AlpmQuestionEventArgs>? Question;
+    public event EventHandler<AlpmProgressEventArgs>? Progress;
 
     public Task Initialize(bool root = false)
     {
         _alpm = configPath is null ? new AlpmManager() : new AlpmManager(configPath);
         _alpm.Initialize(root);
+        _alpm.Question += (sender, args) => Question?.Invoke(this, args);
+        _alpm.Progress += (sender, args) => Progress?.Invoke(this, args);
         _aurSearchManager = new AurSearchManager(_httpClient);
         return Task.CompletedTask;
     }
@@ -169,6 +173,102 @@ public class AurPackageManager(string? configPath = null)
         }
 
         return null;
+    }
+
+    public async Task InstallDependenciesOnly(string packageName, bool includeMakeDeps = false)
+    {
+        PackageProgress?.Invoke(this, new PackageProgressEventArgs
+        {
+            PackageName = packageName,
+            CurrentIndex = 1,
+            TotalCount = 1,
+            Status = PackageProgressStatus.Downloading,
+            Message = "Downloading PKGBUILD to analyze dependencies"
+        });
+
+        var success = await DownloadPackage(packageName);
+
+        if (!success)
+        {
+            PackageProgress?.Invoke(this, new PackageProgressEventArgs
+            {
+                PackageName = packageName,
+                CurrentIndex = 1,
+                TotalCount = 1,
+                Status = PackageProgressStatus.Failed,
+                Message = "Failed to download package"
+            });
+            return;
+        }
+
+        var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
+        var home = $"/home/{user}";
+        var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+        var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
+        
+        var depends = pkgbuildInfo.Depends.Select(x => x.Trim()).ToList();
+        var depsToConsider = depends.ToList();
+        
+        if (includeMakeDeps)
+        {
+            var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
+            depsToConsider = depsToConsider.Concat(makeDepends).Distinct().ToList();
+        }
+
+        var installedPackages = _alpm.GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
+        var depsToInstall = depsToConsider.Where(x => !IsDependencySatisfied(x, installedPackages)).ToList();
+
+        if (depsToInstall.Count == 0)
+        {
+            PackageProgress?.Invoke(this, new PackageProgressEventArgs
+            {
+                PackageName = packageName,
+                CurrentIndex = 1,
+                TotalCount = 1,
+                Status = PackageProgressStatus.Completed,
+                Message = "All dependencies are already installed"
+            });
+            return;
+        }
+
+        PackageProgress?.Invoke(this, new PackageProgressEventArgs
+        {
+            PackageName = packageName,
+            CurrentIndex = 1,
+            TotalCount = 1,
+            Status = PackageProgressStatus.Installing,
+            Message = $"Installing dependencies: {string.Join(", ", depsToInstall)}"
+        });
+
+        foreach (var dep in depsToInstall)
+        {
+            try
+            {
+                _alpm.InstallPackages(depsToInstall);
+                break; // If successful, all deps are installed
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    var pkgName = _alpm.GetPackageNameFromProvides(dep);
+                    _alpm.InstallPackage(pkgName);
+                }
+                catch (Exception ex2)
+                {
+                    Console.Error.WriteLine("Failed to install dependency: " + ex2.Message);
+                }
+            }
+        }
+
+        PackageProgress?.Invoke(this, new PackageProgressEventArgs
+        {
+            PackageName = packageName,
+            CurrentIndex = 1,
+            TotalCount = 1,
+            Status = PackageProgressStatus.Completed,
+            Message = "Dependencies installed successfully"
+        });
     }
 
     public async Task InstallPackages(List<string> packageNames)

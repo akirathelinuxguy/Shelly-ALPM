@@ -8,9 +8,9 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Standard;
 
-public class ListAvailableCommand : Command<DefaultSettings>
+public class ListAvailableCommand : Command<ListSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
+    public override int Execute([NotNull] CommandContext context, [NotNull] ListSettings settings)
     {
         try
         {
@@ -43,9 +43,31 @@ public class ListAvailableCommand : Command<DefaultSettings>
 
             var packages = manager.GetAvailablePackages();
 
+            // Apply filter if specified
+            if (!string.IsNullOrWhiteSpace(settings.Filter))
+            {
+                packages = packages.Where(p => p.Name.Contains(settings.Filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Apply sorting based on settings
+            // Note: Popularity sorts by name as there is no popularity data available for standard packages
+            var sortedPackages = settings.Sort switch
+            {
+                SortOption.Size => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Size)
+                    : packages.OrderByDescending(p => p.Size),
+                SortOption.Popularity => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Name)
+                    : packages.OrderByDescending(p => p.Name),
+                _ => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Name)
+                    : packages.OrderByDescending(p => p.Name)
+            };
+
             if (settings.JsonOutput)
             {
-                var json = JsonSerializer.Serialize(packages, ShellyCLIJsonContext.Default.ListAlpmPackageDto);
+                var sortedList = sortedPackages.ToList();
+                var json = JsonSerializer.Serialize(sortedList, ShellyCLIJsonContext.Default.ListAlpmPackageDto);
                 // Write directly to stdout stream to bypass Spectre.Console redirection
                 using var stdout = Console.OpenStandardOutput();
                 using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
@@ -60,7 +82,7 @@ public class ListAvailableCommand : Command<DefaultSettings>
             table.AddColumn("Repository");
             table.AddColumn("Description");
 
-            foreach (var pkg in packages.OrderBy(p => p.Name).Take(100))
+            foreach (var pkg in sortedPackages.Take(100))
             {
                 table.AddRow(
                     pkg.Name,

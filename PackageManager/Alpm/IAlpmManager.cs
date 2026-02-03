@@ -18,24 +18,33 @@ public interface IAlpmManager
     List<AlpmPackageUpdateDto> GetPackagesNeedingUpdate();
 
     void InstallPackages(List<string> packageNames,
-        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+        AlpmTransFlag flags = AlpmTransFlag.None);
 
     void RemovePackages(List<string> packageNames,
-        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+        AlpmTransFlag flags = AlpmTransFlag.None);
 
-    void RemovePackage(string packageName, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+    void RemovePackage(string packageName, AlpmTransFlag flags = AlpmTransFlag.None);
 
     void UpdatePackages(List<string> packageNames,
-        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+        AlpmTransFlag flags = AlpmTransFlag.None);
 
-    void SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+    void SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.None);
 
     void InstallLocalPackage(string path, AlpmTransFlag flags = AlpmTransFlag.None);
-    
+
     /// <summary>
     /// This installs the first package that provides a given dependency.
     /// </summary>
     string GetPackageNameFromProvides(string provides, AlpmTransFlag flags = AlpmTransFlag.None);
+
+    /// <summary>
+    /// This installs package dependencies only for a given package.
+    /// </summary>
+    /// <param name="packageName">Name of the package that dependencies are being installed for</param>
+    /// <param name="includeMakeDeps"></param>
+    /// <param name="flags">Flags that should be used for the installation</param>
+    void InstallDependenciesOnly(string packageName,bool includeMakeDeps = false,
+        AlpmTransFlag flags = AlpmTransFlag.None);
 
     void Refresh();
 }
