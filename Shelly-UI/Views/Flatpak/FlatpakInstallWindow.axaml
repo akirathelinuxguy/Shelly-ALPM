@@ -1,0 +1,130 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:Shelly_UI.Converters"
+             xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
+             xmlns:lang="clr-namespace:Shelly_UI.Assets"
+             xmlns:vm="clr-namespace:Shelly_UI.ViewModels.Flatpak"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:models="clr-namespace:Shelly_UI.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:FlatpakInstallViewModel"
+             x:Class="Shelly_UI.Views.Flatpak.FlatpakInstallWindow">
+    <UserControl.Resources>
+        <converters:BottomPanelHeightConverter x:Key="BottomPanelHeightConverter" />
+        <converters:FilePathToBitmapConverter x:Key="FilePathToBitmapConverter" />
+    </UserControl.Resources>
+    <customControls:ConsoleSplitControl
+        IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
+        IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
+        <customControls:ConsoleSplitControl.MainContent>
+            <Grid Background="{DynamicResource SystemChromeLowColor}">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+                            <TextBlock
+                                Text="Install Flatpak"
+                                FontWeight="Bold"
+                                Foreground="{DynamicResource SystemBaseHighColor}"
+                                VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1"
+                                     Width="220"
+                                     Margin="12,0"
+                                     Watermark="{x:Static lang:Resources.SearchPackages}"
+                                     Text="{Binding SearchText}"
+                                     HorizontalContentAlignment="Left"
+                                     VerticalContentAlignment="Center"
+                                     Background="{DynamicResource ChromeWhite}"
+                                     Foreground="{DynamicResource AltMediumLow}"
+                                     BorderThickness="1"
+                                     BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                     CornerRadius="4">
+
+                                <TextBox.KeyBindings>
+                                    <KeyBinding
+                                        Gesture="Enter"
+                                        Command="{Binding SearchCommand}" />
+                                </TextBox.KeyBindings>
+                            </TextBox>
+                            <Button
+                                Grid.Column="2"
+                                Margin="12,0,0,0"
+                                Padding="8"
+                                Background="Transparent"
+                                Command="{Binding RefreshCommand}"
+                                ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                                <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}"
+                                                       Width="20" Height="20" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <ScrollViewer Grid.Row="1"
+                                  Name="FlatpakScrollViewer">
+                        <ItemsControl ItemsSource="{Binding Flatpaks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:FlatpakModel">
+                                    <Border
+                                        Padding="12"
+                                        Margin="12,12,12,0"
+                                        Background="{DynamicResource ChromeWhite}"
+                                        CornerRadius="8"
+                                        HorizontalAlignment="Stretch"
+                                        BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                        BorderThickness="1"
+                                        BoxShadow="0 6 16 0 #33000000">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Image
+                                                Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
+                                                Width="64"
+                                                Height="64"
+                                                Stretch="Uniform"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Left"
+                                                Margin="0,0,0,8" />
+                                            <StackPanel Margin="12,0" Grid.Column="1">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="Bold" />
+                                                <TextBlock
+                                                    Text="{Binding Summary}"
+                                                    Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Button
+                                                Grid.Column="2"
+                                                Margin="12,0,0,0"
+                                                Padding="8"
+                                                HorizontalAlignment="Right"
+                                                Background="Transparent"
+                                                Command="{Binding $parent[ItemsControl].((vm:FlatpakInstallViewModel)DataContext).InstallPackagesCommand}"
+                                                CommandParameter="{Binding}">
+                                                <avalonia:MaterialIcon Kind="Download"
+                                                                       Foreground="{DynamicResource SystemBaseHighColor}"
+                                                                       Width="20" Height="20" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"  IsVisible="{Binding LoadingData}">
+                        <ProgressBar Grid.Row="0" IsIndeterminate="True"
+                                    
+                                     Width="50"
+                                     Height="50" />
+                        <TextBlock Text="Loading flatpak information this may take a moment on first load."></TextBlock>
+                    </StackPanel>
+
+                </Grid>
+            </Grid>
+
+        </customControls:ConsoleSplitControl.MainContent>
+        <customControls:ConsoleSplitControl.BottomContent>
+            <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
+                <ScrollViewer>
+                    <customControls:RichConsoleControl Logs="{Binding Logs}" />
+                </ScrollViewer>
+            </Grid>
+        </customControls:ConsoleSplitControl.BottomContent>
+    </customControls:ConsoleSplitControl>
+</UserControl>

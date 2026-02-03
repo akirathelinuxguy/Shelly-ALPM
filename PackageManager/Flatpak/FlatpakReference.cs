@@ -115,6 +115,12 @@ internal static partial class FlatpakReference
     [LibraryImport(LibName, EntryPoint = "flatpak_remote_get_name", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr RemoteGetName(IntPtr remote);
 
+    [LibraryImport(LibName, EntryPoint = "flatpak_installation_update_appstream_sync",
+        StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool InstallationUpdateAppstreamSync(IntPtr installation, string remoteName, string? arch,
+        [MarshalAs(UnmanagedType.Bool)] out bool outChanged, IntPtr cancellable, out IntPtr error);
+
     #endregion
 
     #region Transaction
@@ -143,6 +149,36 @@ internal static partial class FlatpakReference
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_run", StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool TransactionRun(IntPtr transaction, IntPtr cancellable, out IntPtr error);
+
+    #endregion
+
+    #region Transaction Progress
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_progress_get_is_estimating")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool TransactionProgressGetIsEstimating(IntPtr progress);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_progress_get_progress")]
+    public static partial int TransactionProgressGetProgress(IntPtr progress);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_progress_get_status")]
+    public static partial IntPtr TransactionProgressGetStatus(IntPtr progress);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_progress_set_update_frequency")]
+    public static partial void TransactionProgressSetUpdateFrequency(IntPtr progress, uint updateInterval);
+    #endregion
+
+    #region GObject Signals
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void TransactionProgressCallback(IntPtr transaction, IntPtr progress, IntPtr userData);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void TransactionNewOperationCallback(IntPtr transaction, IntPtr operation, IntPtr progress, IntPtr userData);
+
+    [LibraryImport(GObjectName, EntryPoint = "g_signal_connect_data", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial ulong GSignalConnectData(IntPtr instance, string detailedSignal, IntPtr handler,
+        IntPtr data, IntPtr destroyData, int connectFlags);
 
     #endregion
 

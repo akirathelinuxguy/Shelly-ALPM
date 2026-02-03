@@ -43,7 +43,7 @@
                                 Width="220"
                                 Margin="12,0"
                                 Watermark="{x:Static lang:Resources.SearchPackages}"
-                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                Text="{Binding SearchText}"
                                 HorizontalContentAlignment="Left"
                                 VerticalContentAlignment="Center"
                                 Background="{DynamicResource ChromeWhite}"

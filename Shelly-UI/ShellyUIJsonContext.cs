@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
+using PackageManager.Flatpak;
 using Shelly_UI.Models;
 
 namespace Shelly_UI;
@@ -21,6 +22,8 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(AurPackageDto))]
 [JsonSerializable(typeof(List<AurUpdateDto>))]
 [JsonSerializable(typeof(AurUpdateDto))]
+[JsonSerializable(typeof(FlatpakModel))]
+[JsonSerializable(typeof(List<FlatpakModel>))]
 internal partial class ShellyUIJsonContext : JsonSerializerContext
 {
 }

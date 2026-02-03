@@ -19,6 +19,7 @@ using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
+using Shelly_UI.ViewModels.Flatpak;
 
 namespace Shelly_UI.ViewModels;
 
@@ -34,6 +35,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)", RegexOptions.Compiled);
 
     private static readonly Regex LogPercentagePattern = new(@"([^:\s\[\]]+): \d+% -> (\d+)%", RegexOptions.Compiled);
+    
+    private static readonly Regex FlatpakProgressPattern =
+        new(@"\[DEBUG_LOG\]\s*Progress:\s*(\d+)%\s*-\s*Downloading:\s*([\d.]+)\s*(\w+)/([\d.]+)\s*(\w+)", RegexOptions.Compiled);
 
     public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
         IServiceProvider services,
@@ -247,6 +251,25 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
         CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
+        GoFlatpakRemove = ReactiveCommand.CreateFromObservable(() =>
+        {
+            var vm = new FlatpakRemoveViewModel(this);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
+        });
+
+        GoFlatpakUpdate = ReactiveCommand.CreateFromObservable(() =>
+        {
+            var vm = new FlatpakUpdateViewModel(this);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
+        });
+
+        GoFlatpak = ReactiveCommand.CreateFromObservable(() =>
+        {
+            var vm = new FlatpakInstallViewModel(this);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
+        });
+
+
         _navigationMap = new()
         {
             { DefaultViewEnum.HomeScreen, GoHome },
@@ -256,6 +279,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             { DefaultViewEnum.UpdateAur, GoAurUpdate },
             { DefaultViewEnum.InstallAur, GoAur },
             { DefaultViewEnum.RemoveAur, GoAurRemove },
+            { DefaultViewEnum.InstallFlatpack, GoFlatpak },
+            { DefaultViewEnum.RemoveFlatpack, GoFlatpakRemove },
+            { DefaultViewEnum.UpdateFlatpack, GoFlatpakUpdate }
         };
 
         NavigateToDefaultView();
@@ -271,6 +297,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             {
                 var matchAlpm = AlpmProgressPattern.Match(log);
                 var matchFormatted = LogPercentagePattern.Match(log);
+                var matchFlatpak = FlatpakProgressPattern.Match(log);
 
                 if (matchAlpm.Success)
                 {
@@ -293,6 +320,16 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                         GlobalBusyMessage = $"{action} {pkg}...";
                     }
                 }
+                else if (matchFlatpak.Success)
+                {
+                    if (int.TryParse(matchFlatpak.Groups[1].Value, out var percent))
+                    {
+                        var status = matchFlatpak.Groups[2].Value.Trim();
+                        GlobalProgressValue = percent;
+                        GlobalProgressText = $"{percent}%";
+                        GlobalBusyMessage = "Installing";
+                    }
+                }
                 else if (matchFormatted.Success)
                 {
                     var pkg = matchFormatted.Groups[1].Value.Trim();
@@ -305,13 +342,25 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 }
             });
 
-        MessageBus.Current.Listen<AurEnableMessage>()
+        MessageBus.Current.Listen<MainWindowMessage>()
             .Subscribe(RefreshUi)
             .DisposeWith(Disposables);
     }
 
-    private void RefreshUi(AurEnableMessage msg)
+    private void RefreshUi(MainWindowMessage msg)
     {
+        if (msg.FlatpakEnable)
+        {
+            IsFlatpakEnabled = !IsFlatpakEnabled;
+            if (IsFlatpakOpen)
+            {
+                IsFlatpakOpen = false;
+            }
+
+            this.RaisePropertyChanged(nameof(IsFlatpakEnabled));
+            return;
+        }
+
         IsAurEnabled = !IsAurEnabled;
         if (IsAurOpen)
         {
@@ -523,6 +572,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAurUpdate { get; set; } = null!;
 
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpakUpdate { get; set; } = null!;
+
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpakRemove { get; set; } = null!;
+
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpak { get; set; } = null!;
+
     public ReactiveCommand<Unit, bool> CloseSettingsCommand { get; set; } = null!;
 
     #endregion
@@ -577,25 +632,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         set => _configService.LoadConfig().AurEnabled = value;
     }
 
-    private bool _isSnapOpen;
-
-    public bool IsSnapOpen
+    public bool IsFlatpakEnabled
     {
-        get => _isSnapOpen;
-        set => this.RaiseAndSetIfChanged(ref _isSnapOpen, value);
-    }
-
-    public void ToggleSnapMenu()
-    {
-        if (!IsPaneOpen)
-        {
-            IsPaneOpen = true;
-            IsSnapOpen = true;
-        }
-        else
-        {
-            IsSnapOpen = !IsSnapOpen;
-        }
+        get => _configService.LoadConfig().FlatPackEnabled;
+        set => _configService.LoadConfig().FlatPackEnabled = value;
     }
 
     private bool _isFlatpakOpen;
@@ -705,6 +745,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         {
             disposable.Dispose();
         }
+
         _currentViewModel = null;
     }
 

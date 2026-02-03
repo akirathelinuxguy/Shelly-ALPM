@@ -19,10 +19,9 @@ public sealed class FlathubSearchSettings : CommandSettings
     [DefaultValue(1)]
     public int Page { get; init; } = 1;
 
-    [CommandOption("--no-ui")]
-    [Description("Output raw JSON data instead of formatted display")]
-    [DefaultValue(false)]
-    public bool NoUi { get; init; } = false;
+    [CommandOption("-j|--json")]
+    [Description("Output results in JSON format for UI integration and scripting")]
+    public bool JsonOutput { get; set; } = false;
 }
 
 public class FlatpakPackageSettings : CommandSettings

@@ -44,6 +44,7 @@
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1"/>
+        <PackageReference Include="LiteDB" Version="6.0.0-prerelease.75" />
         <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="5.0.0-1.25277.114">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -61,5 +62,8 @@
       <Reference Include="Avalonia.Controls.ColorPicker">
         <HintPath>..\..\..\.nuget\packages\avalonia.controls.colorpicker\11.3.10\lib\net8.0\Avalonia.Controls.ColorPicker.dll</HintPath>
       </Reference>
+        <Reference Include="LiteDB">
+            <HintPath>..\..\..\.nuget\packages\litedb\6.0.0-prerelease.75\lib\net8.0\LiteDB.dll</HintPath>
+        </Reference>
     </ItemGroup>
 </Project>

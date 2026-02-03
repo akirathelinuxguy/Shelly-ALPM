@@ -241,6 +241,14 @@ public class Program
                     .WithExample("flatpak", "search", "spotify")
                     .WithExample("flatpak", "search", "spotify", "--limit", "10")
                     .WithExample("flatpak", "search", "spotify", "--page", "2");
+
+                flatpak.AddCommand<FlatpakSyncRemoteAppStream>("sync-remote-appstream")
+                    .WithDescription("Sync remote appstream")
+                    .WithExample("flatpak", "sync-remote-appstream");
+
+                flatpak.AddCommand<FlathubGetRemote>("get-remote-appstream")
+                    .WithDescription("Returns remote appstream json")
+                    .WithExample("flatpak", "sync-get-remote-appstream");
             });
         });
 
