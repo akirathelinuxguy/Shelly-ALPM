@@ -10,7 +10,7 @@ public class AurListInstalledCommand : AsyncCommand<ListSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ListSettings settings)
     {
-        AurPackageManager manager = null;
+        AurPackageManager? manager = null;
         try
         {
             manager = new AurPackageManager();
